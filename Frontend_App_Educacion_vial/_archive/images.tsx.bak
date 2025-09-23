@@ -1,0 +1,76 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors } from '../src/utils/colors';
+import { ImagesApi, type ColoredImage } from '../src/services/images';
+import { useRouter, type Href } from 'expo-router';
+
+export default function ImagesScreen() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<ColoredImage[]>([]);
+
+  const load = async () => {
+    setLoading(true);
+    const list = await ImagesApi.list();
+    setItems(list);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const add = async () => {
+    await ImagesApi.create({ demo: true, at: new Date().toISOString() });
+    await load();
+  };
+
+  const remove = async (id: string) => {
+    await ImagesApi.remove(id);
+    await load();
+  };
+
+  return (
+    <LinearGradient colors={colors.gradientBackground} style={styles.container}>
+      <TouchableOpacity onPress={() => router.replace('/welcome' as Href)} style={styles.back}>
+        <Text style={styles.backText}>← Volver</Text>
+      </TouchableOpacity>
+      <Text style={styles.title}>Imágenes coloreadas</Text>
+
+      {loading ? (
+        <Text>Cargando...</Text>
+      ) : (
+        <>
+          <TouchableOpacity onPress={add} style={styles.btn}> 
+            <Text style={styles.btnText}>Añadir imagen demo</Text>
+          </TouchableOpacity>
+          <FlatList
+            data={items}
+            keyExtractor={(it) => it.id}
+            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+            renderItem={({ item }) => (
+              <View style={styles.itemRow}>
+                <Text style={styles.itemText}>{item.id}</Text>
+                <TouchableOpacity onPress={() => remove(item.id)}>
+                  <Text style={{ color: colors.error }}>Eliminar</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+        </>
+      )}
+    </LinearGradient>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, paddingTop: 48 },
+  back: { marginBottom: 12 },
+  backText: { color: colors.textSecondary, fontWeight: '600' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: colors.textPrimary },
+  btn: { backgroundColor: colors.buttonPrimary, padding: 12, borderRadius: 10, alignItems: 'center', marginBottom: 12 },
+  btnText: { color: colors.white, fontWeight: 'bold' },
+  itemRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 12, borderRadius: 10, backgroundColor: '#fff' },
+  itemText: { color: colors.textPrimary },
+});

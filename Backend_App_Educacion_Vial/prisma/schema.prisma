@@ -1,0 +1,117 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RolesEnum {
+  CHILD
+  ADMIN
+
+  @@map("roles")
+}
+
+enum SexEnum {
+  MALE
+  FEMALE
+  OTHER
+
+  @@map("sex")
+}
+
+
+
+model Child {
+  id                  String               @id @default(uuid())
+  cedula              String               @unique
+  name                String
+  sex                 SexEnum[]
+  username            String               @unique
+  birthDate           DateTime
+  role                RolesEnum[]          @default([CHILD])
+  password            String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  progress            Progress?
+  album               Album?
+  coloredImages       ColoredImage[]
+
+  @@map("children")
+}
+
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  childId    String
+  child      Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  isRevoked Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("refresh_tokens")
+}
+
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  childId    String
+  child      Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}
+
+model Progress {
+  id             String   @id @default(uuid())
+  childId        String   @unique
+  child          Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  level          Int      @default(1)
+  points         Int      @default(0)
+  coins          Int      @default(0)
+  completedGames String[] @default([])
+  levelPoints    Json
+  unlockedLevels Int[]    @default([1])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("progress")
+}
+
+model Album {
+  id         String   @id @default(uuid())
+  childId    String   @unique
+  child      Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  characters Json     @default("[]")
+  vehicles   Json     @default("[]")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("albums")
+}
+
+model ColoredImage {
+  id          String   @id @default(uuid())
+  childId     String
+  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  data        Json
+  dateCreated DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@map("colored_images")
+}

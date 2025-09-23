@@ -1,0 +1,96 @@
+import { ProgressApi } from './progress';
+
+// Helper to apply common update pattern with caps and unlocks
+async function applyProgressUpdate(
+  update: {
+    addPoints: number;
+    addCoinsIfNoPoints?: number;
+    completedKeysToAdd: string[];
+  }
+) {
+  const current = await ProgressApi.get();
+  const levelPoints: Record<string, number> = current.levelPoints || { 1: 0, 2: 0, 3: 0 };
+  const level = 1; // nivel activo para estas actividades
+  const currentLP = Number(levelPoints[level] ?? 0);
+
+  const newLevelPoints = Math.min(currentLP + (update.addPoints || 0), 25);
+  const actualPointsEarned = newLevelPoints - currentLP;
+
+  let coins = current.coins || 0;
+  if (actualPointsEarned === 0 && update.addCoinsIfNoPoints) {
+    coins += update.addCoinsIfNoPoints;
+  }
+
+  // Merge completed keys without duplicates
+  const completedGames: string[] = Array.isArray(current.completedGames) ? current.completedGames : [];
+  const newCompleted = [...completedGames];
+  for (const k of update.completedKeysToAdd) {
+    if (!newCompleted.includes(k)) newCompleted.push(k);
+  }
+
+  // Unlock level 2 if LP >= 25
+  const newUnlocked = Array.isArray(current.unlockedLevels) ? [...current.unlockedLevels] : [1];
+  let newLevel = current.level || 1;
+  const newLPObj = { ...levelPoints, [level]: newLevelPoints } as Record<string, number>;
+  if (newLevelPoints >= 25 && newLevel < 3 && !newUnlocked.includes(2)) {
+    newUnlocked.push(2);
+    newLevel = Math.max(newLevel, 2);
+  }
+
+  return ProgressApi.update({
+    level: newLevel,
+    points: (current.points || 0) + actualPointsEarned,
+    coins,
+    completedGames: newCompleted,
+    levelPoints: newLPObj,
+    unlockedLevels: newUnlocked,
+  });
+}
+
+// Quiz nivel 1
+export async function awardQuizLevel1Completion(pointsEarned = 10) {
+  const level = 1;
+  const key = `${level}_quiz_vial`;
+  const legacyKey = `${level}_1`;
+  return applyProgressUpdate({
+    addPoints: pointsEarned,
+    addCoinsIfNoPoints: Math.floor(pointsEarned / 2),
+    completedKeysToAdd: [key, legacyKey],
+  });
+}
+
+// Bicicleta nivel 1
+export async function awardBicycleLevel1Completion(pointsEarned = 10) {
+  const level = 1;
+  const key = `${level}_bicycle`;
+  const legacyKey = `${level}_2`;
+  return applyProgressUpdate({
+    addPoints: pointsEarned,
+    addCoinsIfNoPoints: Math.floor(pointsEarned / 2),
+    completedKeysToAdd: [key, legacyKey],
+  });
+}
+
+// Colorear nivel 1 (actividad global de colorear)
+export async function awardColoringLevel1Completion(pointsEarned = 10) {
+  const level = 1;
+  const key = `${level}_coloring`;
+  const legacyKey = `${level}_6`;
+  return applyProgressUpdate({
+    addPoints: pointsEarned,
+    addCoinsIfNoPoints: Math.floor(pointsEarned / 2),
+    completedKeysToAdd: [key, legacyKey],
+  });
+}
+
+// Colorear tareas específicas (3 opciones). Cada una suma progreso y cuenta para las 3 estrellas del nivel.
+// task: 'cat' | 'patrol' | 'semaforo' → claves: '1_coloring_cat', etc.
+export async function awardColoringTaskCompletion(task: 'cat' | 'patrol' | 'semaforo', pointsEarned = 8) {
+  const level = 1;
+  const key = `${level}_coloring_${task}`;
+  return applyProgressUpdate({
+    addPoints: pointsEarned,
+    addCoinsIfNoPoints: Math.floor(pointsEarned / 2),
+    completedKeysToAdd: [key],
+  });
+}
