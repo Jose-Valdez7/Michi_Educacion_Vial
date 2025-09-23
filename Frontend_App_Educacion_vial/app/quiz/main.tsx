@@ -53,7 +53,7 @@ export default function QuizMain() {
         </LinearGradient>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.btn} onPress={() => router.push('/quiz/play' as Href)}>
+      <TouchableOpacity style={styles.btn} onPress={() => router.push('/quiz/levels' as Href)}>
         <LinearGradient colors={colors.gradientSuccess} style={styles.btnGradient}>
           <Text style={styles.btnText}>▶️ Empezar Quiz</Text>
         </LinearGradient>
