@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Image, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../src/utils/colors';
-import { ProgressApi } from '../src/services/progress';
-import { AuthService } from '../src/services/auth';
+import { colors } from '@/utils/colors';
+import { ProgressApi } from '@/services/progress';
+import { AuthService } from '@/services/auth';
 import { useRouter, type Href } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');

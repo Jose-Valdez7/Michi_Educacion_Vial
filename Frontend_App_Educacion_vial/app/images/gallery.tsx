@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Dimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { colors } from '../../src/utils/colors';
-import { ImagesApi, type ColoredImage } from '../../src/services/images';
+import { colors } from '@/utils/colors';
+import { ImagesApi, type ColoredImage } from '@/services/images';
 
 const { width, height } = Dimensions.get('window');
 

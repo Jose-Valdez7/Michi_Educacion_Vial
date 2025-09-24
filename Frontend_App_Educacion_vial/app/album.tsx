@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../src/utils/colors';
-import { AlbumApi } from '../src/services/album';
+import { colors } from '@/utils/colors';
+import { AlbumApi } from '@/services/album';
 import { useRouter, type Href } from 'expo-router';
 
 export default function AlbumScreen() {

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
-import { colors } from '../src/utils/colors';
+import { colors } from '@/utils/colors';
 
 export default function BicycleScreen() {
   const router = useRouter();

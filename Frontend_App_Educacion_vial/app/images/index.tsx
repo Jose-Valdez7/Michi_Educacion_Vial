@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
-import { colors } from '../../src/utils/colors';
-import { ProgressApi } from '../../src/services/progress';
-import { maybeAwardColoringSetStar } from '../../src/services/progress2';
+import { colors } from '@/utils/colors';
+import { ProgressApi } from '@/services/progress';
+import { maybeAwardColoringSetStar } from '@/services/progress2';
 
 const { width, height } = Dimensions.get('window');
 

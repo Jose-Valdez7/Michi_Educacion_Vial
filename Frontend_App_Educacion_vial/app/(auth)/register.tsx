@@ -2,8 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Dimensions, SafeAreaView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
-import { colors } from '../../src/utils/colors';
-import { AuthService } from '../../src/services/auth';
+import { colors } from '@/utils/colors';
+import { AuthService } from '@/services/auth';
 
 const { width, height } = Dimensions.get('window');
 
