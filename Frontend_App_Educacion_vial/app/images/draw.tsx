@@ -168,8 +168,8 @@ export default function ImagesDraw() {
       });
 
       try {
-        console.log('🧪 Probando con endpoint de test...');
-        const result = await ImagesApi.test(data);
+        console.log('🎨 Guardando imagen con endpoint real...');
+        const result = await ImagesApi.create(data);
         
 
         // ✅ Marcar progreso después de guardar exitosamente

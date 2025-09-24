@@ -16,9 +16,20 @@ export default function ImagesGallery() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('📱 Cargando galería...');
       const data = await ImagesApi.list();
+      console.log('📱 Galería cargada:', {
+        itemsCount: data.length,
+        items: data.map(item => ({
+          id: item.id,
+          title: item.data?.title,
+          taskId: item.data?.taskId,
+          dateCreated: item.dateCreated
+        }))
+      });
       setItems(data);
     } catch (e: any) {
+      console.error('❌ Error cargando galería:', e);
       Alert.alert('Error', e?.message || 'No se pudo cargar la galería');
     } finally {
       setLoading(false);
@@ -28,6 +39,7 @@ export default function ImagesGallery() {
   // Use useFocusEffect to reload when screen gains focus
   useFocusEffect(
     useCallback(() => {
+      console.log('🔄 Galería enfocada - recargando...');
       load();
     }, [load])
   );

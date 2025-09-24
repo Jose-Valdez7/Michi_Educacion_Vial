@@ -11,27 +11,51 @@ export const ImagesApi = {
   async list(): Promise<ColoredImage[]> {
     const { accessToken, childId } = await AuthService.getSession();
     if (!accessToken || !childId) throw new Error('No session');
-    return api.request(`/images/${childId}`, {
+
+    console.log('📋 [ImagesApi.list] Solicitando lista de imágenes para childId:', childId);
+
+    const result = await api.request(`/images/${childId}`, {
       headers: AuthService.headersWithAuth(accessToken),
+    }) as ColoredImage[];
+
+    console.log('📋 [ImagesApi.list] Respuesta recibida:', {
+      count: result.length,
+      items: result.map((item: any) => ({
+        id: item.id,
+        title: item.data?.title,
+        taskId: item.data?.taskId,
+        dateCreated: item.dateCreated
+      }))
     });
+
+    return result;
   },
 
-  async test(data: Record<string, any>): Promise<any> {
+  async create(data: Record<string, any>): Promise<ColoredImage> {
     const { accessToken, childId } = await AuthService.getSession();
     if (!accessToken || !childId) throw new Error('No session');
 
-    console.log('🧪 [ImagesApi.test] Enviando datos de prueba:', {
+    console.log('🔍 [ImagesApi.create] Datos recibidos:', {
       childId,
       dataKeys: Object.keys(data),
       dataType: typeof data,
-      dataContent: data,
-      dataString: JSON.stringify(data, null, 2)
+      hasTitle: !!data.title,
+      hasPaths: !!data.paths,
+      pathsCount: data.paths?.length || 0,
+      hasColors: !!data.colors,
+      colorsCount: data.colors?.length || 0,
+      hasBaseImage: !!data.baseImage,
+      title: data.title,
+      taskId: data.taskId,
+      baseImage: data.baseImage,
+      pathsData: data.paths,
+      colorsData: data.colors
     });
 
     const requestBody = JSON.stringify(data);
-    console.log('🧪 [ImagesApi.test] JSON enviado:', requestBody);
+    console.log('🔍 [ImagesApi.create] JSON enviado:', requestBody);
 
-    return api.request(`/images/${childId}/test`, {
+    return api.request(`/images/${childId}`, { // ✅ Usar endpoint normal de creación
       method: 'POST',
       headers: AuthService.headersWithAuth(accessToken),
       body: requestBody,
