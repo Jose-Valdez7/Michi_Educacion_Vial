@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Image, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../src/utils/colors';
-import { AuthService } from '../src/services/auth';
 import { ProgressApi } from '../src/services/progress';
+import { AuthService } from '../src/services/auth';
 import { useRouter, type Href } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
@@ -25,6 +25,32 @@ export default function Welcome() {
       try {
         const p = await ProgressApi.get();
         setProgress(p);
+
+        // ✅ Verificar si se completaron las 3 estrellas del nivel 1
+        const level1Stars = completedStars(p.completedGames, 1);
+        if (level1Stars === 3) {
+          // Verificar si ya se dieron los 25 puntos (evitar duplicados)
+          const hasReceivedPoints = p.completedGames.includes('1_level_completed_bonus');
+
+          if (!hasReceivedPoints) {
+            // ✅ Dar 25 puntos de licencia digital por completar las 3 estrellas
+            const newPoints = (p.points || 0) + 25;
+            const newCompletedGames = [...p.completedGames, '1_level_completed_bonus'];
+
+            await ProgressApi.update({
+              points: newPoints,
+              completedGames: newCompletedGames
+            });
+
+            // Actualizar el progreso local para reflejar los cambios
+            setProgress({
+              ...p,
+              points: newPoints,
+              completedGames: newCompletedGames
+            });
+          }
+        }
+
         // Obtener el primer nombre del usuario desde la tabla
         let firstName = 'Amigo';
         // Intentar obtener el nombre real del usuario
@@ -95,6 +121,10 @@ export default function Welcome() {
             const isUnlocked = progress.unlockedLevels?.includes(lvl) ?? (lvl === 1);
             const isLocked = !isUnlocked;
 
+            // ✅ Verificar si el nivel 2 debe desbloquearse (3 estrellas en nivel 1)
+            const level1Stars = completedStars(progress.completedGames, 1);
+            const shouldUnlockLevel2 = lvl === 2 && level1Stars === 3 && !isUnlocked;
+
             return (
               <View key={lvl} style={[styles.islandCard, isLocked && styles.lockedIslandCard]}>
                 <LinearGradient colors={isLocked ? ['#666666', '#888888'] : colors.gradientSecondary} style={styles.islandGradient}>
@@ -111,7 +141,7 @@ export default function Welcome() {
                         <Text style={styles.lockIcon}>🔒</Text>
                         <Text style={styles.lockMessage}>Nivel Bloqueado</Text>
                         <Text style={styles.lockRequirement}>
-                          {lvl === 2 ? 'Completa el Nivel 1' :
+                          {lvl === 2 ? (shouldUnlockLevel2 ? '¡Desbloqueado!' : 'Completa las 3 estrellas del Nivel 1') :
                            lvl === 3 ? 'Completa el Nivel 2' :
                            lvl === 4 ? 'Completa el Nivel 3' :
                            'Completa el Nivel 4'}
@@ -122,7 +152,9 @@ export default function Welcome() {
                     <View style={styles.starsBackground}>
                       <View style={styles.starsContainer}>
                         {[1,2,3].map((n) => (
-                          <Text key={n} style={styles.starText}>{completedStars(progress.completedGames, lvl) >= n ? '⭐' : '☆'}</Text>
+                          <Text key={n} style={styles.starText}>
+                            {completedStars(progress.completedGames, lvl) >= n ? '⭐' : '☆'}
+                          </Text>
                         ))}
                       </View>
                     </View>
@@ -131,18 +163,18 @@ export default function Welcome() {
                   <TouchableOpacity
                     style={[styles.islandButton, isLocked && styles.lockedIslandButton]}
                     onPress={() => {
-                      if (isUnlocked) {
+                      if (isUnlocked || shouldUnlockLevel2) {
                         router.push('/minigames/level1' as Href);
                       }
                     }}
-                    disabled={isLocked}
+                    disabled={isLocked && !shouldUnlockLevel2}
                   >
                     <LinearGradient
-                      colors={isLocked ? ['#999999', '#bbbbbb'] : (lvl === 1 ? colors.gradientPrimary : colors.gradientSecondary)}
+                      colors={isLocked && !shouldUnlockLevel2 ? ['#999999', '#bbbbbb'] : (lvl === 1 ? colors.gradientPrimary : colors.gradientSecondary)}
                       style={styles.islandButtonGradient}
                     >
                       <Text style={[styles.islandButtonText, isLocked && styles.lockedIslandButtonText]}>
-                        {isLocked ? '🔒 Bloqueado' : '🎮 Jugar'}
+                        {isLocked && !shouldUnlockLevel2 ? '🔒 Bloqueado' : '🎮 Jugar'}
                       </Text>
                     </LinearGradient>
                   </TouchableOpacity>
@@ -262,6 +294,23 @@ const styles = StyleSheet.create({
 });
 
 function completedStars(completedGames: string[] = [], level: number): number {
+  if (level === 1) {
+    // ✅ Juegos específicos del nivel 1 para las 3 estrellas
+    const requiredGames = [
+      '1_quiz_vial',              // ⭐ 1ª estrella: Quiz vial difícil
+      '1_colorear_divertidamente', // ⭐ 2ª estrella: Colorear divertidamente
+      '1_paseo_bici'              // ⭐ 3ª estrella: Paseo en bici
+    ];
+
+    // Contar cuántos de estos juegos están completados
+    const completedCount = requiredGames.filter(gameKey =>
+      completedGames.includes(gameKey)
+    ).length;
+
+    return Math.max(0, Math.min(3, completedCount));
+  }
+
+  // Para otros niveles, usar lógica anterior
   const count = completedGames.filter((key) => key.startsWith(`${level}_`)).length;
   return Math.max(0, Math.min(3, count));
 }

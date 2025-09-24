@@ -43,7 +43,7 @@ export default function QuizLearning() {
 
       <TouchableOpacity 
         style={styles.btn} 
-        onPress={() => router.push('/quiz/play' as Href)}
+        onPress={() => router.push('/quiz/levels' as Href)}
         activeOpacity={0.85}
       >
         <LinearGradient colors={colors.gradientSuccess} style={styles.btnGradient}>
