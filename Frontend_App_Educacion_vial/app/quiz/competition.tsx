@@ -66,7 +66,7 @@ export default function CompetitionScreen() {
         const socket = socketRef.current;
 
         socket.on('connect', () => {
-          console.log('Conectado al servidor');
+          
           setConnectionStatus('connected');
           setIsConnected(true);
 
@@ -91,30 +91,30 @@ export default function CompetitionScreen() {
         });
 
         socket.on('roomCreated', (data: { roomCode: string }) => {
-          console.log('Sala creada:', data.roomCode);
+          
           roomCode.current = data.roomCode;
           router.setParams({ roomCode: data.roomCode });
         });
 
         socket.on('roomJoined', (data: { players: Player[] }) => {
-          console.log('Unido a la sala:', data.players);
+          
           setPlayers(data.players);
         });
 
         socket.on('playerJoined', (player: Player) => {
-          console.log('Nuevo jugador:', player);
+          
           setPlayers(prev => [...prev, player]);
           Alert.alert(`${player.name} se ha unido a la sala`);
         });
 
         socket.on('disconnect', () => {
-          console.log('Desconectado del servidor');
+          
           setConnectionStatus('disconnected');
           setIsConnected(false);
         });
 
         socket.on('error', (error: string) => {
-          console.error('Error en el socket:', error);
+          
           Alert.alert('Error', error);
           setConnectionStatus('error');
         });
@@ -125,7 +125,7 @@ export default function CompetitionScreen() {
           }
         };
       } catch (error) {
-        console.error('Error al inicializar el socket:', error);
+        
         setConnectionStatus('error');
         Alert.alert('Error', 'No se pudo conectar al servidor. Intenta de nuevo más tarde.');
       }
@@ -168,7 +168,7 @@ export default function CompetitionScreen() {
       }
       Alert.alert('Código copiado', `Código de sala: ${roomCode.current}`);
     } catch (error) {
-      console.error('Error al copiar el código:', error);
+      
       Alert.alert('Error', 'No se pudo copiar el código al portapapeles');
     }
   };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Dimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { colors } from '../../src/utils/colors';
 import { ImagesApi, type ColoredImage } from '../../src/services/images';
 
@@ -25,9 +25,12 @@ export default function ImagesGallery() {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Use useFocusEffect to reload when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   const onRefresh = async () => {
     try {
@@ -59,7 +62,7 @@ export default function ImagesGallery() {
 
   if (loading) {
     return (
-      <View style={styles.center}> 
+      <View style={styles.center}>
         <ActivityIndicator color={colors.white} />
         <Text style={{ color: colors.white, marginTop: 8 }}>Cargando galería...</Text>
       </View>
@@ -83,6 +86,33 @@ export default function ImagesGallery() {
               <Text numberOfLines={2} style={styles.cardTitle}>{item.data?.title || 'Dibujo'}</Text>
               <Text style={styles.cardDate}>{new Date(item.dateCreated).toLocaleDateString()}</Text>
 
+              {/* Display the drawing as a small preview */}
+              {item.data?.paths && item.data.paths.length > 0 && (
+                <View style={styles.drawingPreview}>
+                  <View style={styles.drawingContainer}>
+                    {item.data.paths.slice(0, 3).map((path: any, pathIndex: number) => (
+                      <View key={pathIndex} style={styles.pathContainer}>
+                        {path.points?.slice(0, 5).map((point: any, pointIndex: number) => (
+                          <View
+                            key={pointIndex}
+                            style={[
+                              styles.pathPoint,
+                              {
+                                backgroundColor: path.color || '#000',
+                                width: 3,
+                                height: 3,
+                                left: point.x * 0.1,
+                                top: point.y * 0.1,
+                              }
+                            ]}
+                          />
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
               <View style={styles.cardButtons}>
                 <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.buttonWarning }]} onPress={() => onDelete(item.id)}>
                   <Text style={styles.smallBtnText}>Eliminar</Text>
@@ -92,7 +122,7 @@ export default function ImagesGallery() {
           </View>
         )}
         ListEmptyComponent={
-          <View style={styles.empty}> 
+          <View style={styles.empty}>
             <Text style={styles.emptyText}>No tienes dibujos aún.</Text>
             <TouchableOpacity style={styles.cta} onPress={() => router.push('/images/draw')}>
               <LinearGradient colors={colors.gradientPrimary} style={styles.ctaGradient}>
@@ -112,10 +142,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 40, backgroundColor: colors.primary },
   title: { fontSize: width < 400 ? 22 : 26, fontWeight: 'bold', color: colors.white, marginBottom: 12, textAlign: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
-  card: { width: CARD_SIZE, height: CARD_SIZE, borderRadius: 16, overflow: 'hidden', marginBottom: 10, backgroundColor: 'rgba(255,255,255,0.15)' },
+  card: { width: CARD_SIZE, height: CARD_SIZE + 20, borderRadius: 16, overflow: 'hidden', marginBottom: 10, backgroundColor: 'rgba(255,255,255,0.15)' },
   cardInner: { flex: 1, padding: 12, justifyContent: 'space-between' },
   cardTitle: { color: colors.textPrimary, fontWeight: '700' },
   cardDate: { color: colors.gray, fontSize: 12 },
+  drawingPreview: { flex: 1, marginVertical: 8 },
+  drawingContainer: { width: '100%', height: 60, backgroundColor: 'white', borderRadius: 8, position: 'relative' },
+  pathContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  pathPoint: { position: 'absolute', borderRadius: 50 },
   cardButtons: { flexDirection: 'row', justifyContent: 'flex-end' },
   smallBtn: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 10 },
   smallBtnText: { color: colors.white, fontWeight: '600' },

@@ -16,15 +16,31 @@ export class ImagesController {
     return this.imagesService.list(childId);
   }
 
-  @Post(':childId')
+  @Post(':childId/test')
   @UseGuards(AuthGuard)
-  create(
+  testEndpoint(
     @Param('childId') childId: string,
-    @Body() body: CreateImageDto,
+    @Body() body: any,
     @Child() child: CurrentChild,
   ) {
+    console.log('🧪 ENDPOINT DE PRUEBA recibió:', {
+      childId,
+      bodyType: typeof body,
+      hasBody: !!body,
+      bodyKeys: body ? Object.keys(body) : 'undefined',
+      bodyContent: body,
+      bodyString: JSON.stringify(body, null, 2),
+      timestamp: new Date().toISOString()
+    });
+
     if (child.id !== childId) throw new ForbiddenException('Forbidden');
-    return this.imagesService.create(childId, body);
+
+    return {
+      success: true,
+      message: 'Test endpoint working',
+      received: body,
+      timestamp: new Date().toISOString()
+    };
   }
 
   @Delete(':childId/:imageId')

@@ -6,6 +6,25 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // ✅ Agregar middleware de JSON parsing
+  app.use(require('body-parser').json({ limit: '10mb' }));
+  app.use(require('body-parser').urlencoded({ extended: true, limit: '10mb' }));
+
+  // ✅ Agregar logging para debugging
+  app.use((req, res, next) => {
+    console.log('🌐 Solicitud HTTP recibida:', {
+      method: req.method,
+      path: req.path,
+      contentType: req.headers['content-type'],
+      hasBody: !!req.body,
+      bodyKeys: req.body ? Object.keys(req.body) : 'undefined',
+      bodySize: JSON.stringify(req.body).length
+    });
+    next();
+  });
+
+  // Configuración de CORS
   
   // Configuración de CORS
   const allowedOrigins = [

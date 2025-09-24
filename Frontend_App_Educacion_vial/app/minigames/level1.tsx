@@ -1,19 +1,45 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../src/utils/colors';
 import { useRouter, type Href } from 'expo-router';
+import { ProgressApi } from '../../src/services/progress';
 
 const { width } = Dimensions.get('window');
 
 export default function MinigamesLevel1() {
   const router = useRouter();
+  const [completedActivities, setCompletedActivities] = useState<Record<string, boolean>>({
+    coloring: false,
+    quiz: false,
+    bicycle: false
+  });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const p = await ProgressApi.get();
+        const list: string[] = Array.isArray(p.completedGames) ? p.completedGames : [];
+
+        setCompletedActivities({
+          coloring: list.includes('1_coloring') || list.includes('1_6'),
+          quiz: list.includes('1_quiz_vial') || list.includes('1_1'),
+          bicycle: list.includes('1_bicycle') || list.includes('1_2')
+        });
+      } catch (e) {
+        console.warn('Error loading completed activities:', e);
+      }
+    })();
+  }, []);
 
   return (
     <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
       <Text style={styles.title}>Nivel 1 </Text>
       <Text style={styles.title}>Minijuegos</Text>
       <Text style={styles.subtitle}>Elige una actividad para continuar y diviertete aprendiendo</Text>
+
+      {/* Sistema de estrellas del nivel */}
+      <StarsRow completed={completedActivities} />
 
       <View style={{ height: 12 }} />
 
@@ -120,3 +146,15 @@ const styles = StyleSheet.create({
     fontSize: 16
   },
 });
+
+// ✅ Componente de estrellas para mostrar progreso del nivel 1
+function StarsRow({ completed }: { completed: Record<string, boolean> }) {
+  const count = (completed.coloring ? 1 : 0) + (completed.quiz ? 1 : 0) + (completed.bicycle ? 1 : 0);
+  return (
+    <View style={{ flexDirection: 'row', alignSelf: 'center', gap: 8, marginVertical: 8 }}>
+      {[1, 2, 3].map((i) => (
+        <Text key={i} style={{ fontSize: 24 }}>{i <= count ? '⭐' : '☆'}</Text>
+      ))}
+    </View>
+  );
+}

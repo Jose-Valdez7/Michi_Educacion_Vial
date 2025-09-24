@@ -55,7 +55,7 @@ export class QuizProgressService {
       }
       return defaultProgress;
     } catch (error) {
-      console.error('Error getting quiz progress:', error);
+      
       return defaultProgress;
     }
   }
@@ -64,7 +64,7 @@ export class QuizProgressService {
     try {
       await AsyncStorage.setItem(QUIZ_PROGRESS_KEY, JSON.stringify(progress));
     } catch (error) {
-      console.error('Error saving quiz progress:', error);
+      
     }
   }
 
@@ -105,7 +105,7 @@ export class QuizProgressService {
             }
           }
         } catch (error) {
-          console.error('Error updating global progress:', error);
+          
         }
       }
 

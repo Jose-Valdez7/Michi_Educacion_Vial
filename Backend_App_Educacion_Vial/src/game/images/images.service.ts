@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../shared/database/prisma.service';
 
 export type CreateImageDto = {
-  // any payload from frontend coloring feature
-  // we store it as JSON to keep parity with AsyncStorage shape
-  // e.g. { svgId: string, colors: Record<string,string>, preview?: string }
-  data: Record<string, any>;
+  // Datos del dibujo enviados directamente por el frontend
+  title: string;
+  taskId: string;
+  paths: Array<{ color: string; size: number; points: Array<{ x: number; y: number }> }>;
+  colors: string[];
+  baseImage: string;
 };
 
 @Injectable()
@@ -20,12 +22,46 @@ export class ImagesService {
   }
 
   async create(childId: string, dto: CreateImageDto) {
-    return this.prisma.coloredImage.create({
+    console.log('📥 Recibiendo datos del frontend:', {
+      childId,
+      hasTitle: !!dto.title,
+      hasTaskId: !!dto.taskId,
+      hasPaths: !!dto.paths,
+      pathsCount: dto.paths?.length || 0,
+      hasColors: !!dto.colors,
+      colorsCount: dto.colors?.length || 0,
+      hasBaseImage: !!dto.baseImage,
+      title: dto.title,
+      taskId: dto.taskId,
+      baseImage: dto.baseImage
+    });
+
+    // ✅ Validar que los datos existan
+    if (!dto.title || !dto.taskId || !dto.paths || !dto.colors) {
+      console.error('❌ Datos del dibujo incompletos:', {
+        hasTitle: !!dto.title,
+        hasTaskId: !!dto.taskId,
+        hasPaths: !!dto.paths,
+        hasColors: !!dto.colors
+      });
+      throw new Error('Datos del dibujo incompletos');
+    }
+
+    console.log('✅ Creando imagen en base de datos...');
+    const result = await this.prisma.coloredImage.create({
       data: {
         childId,
-        data: dto.data,
+        data: dto, // ✅ Guardar todo el objeto dto como JSON
       },
     });
+
+    console.log('✅ Imagen creada exitosamente:', {
+      id: result.id,
+      childId: result.childId,
+      dateCreated: result.dateCreated
+    });
+
+    return result;
   }
 
   async remove(childId: string, imageId: string) {

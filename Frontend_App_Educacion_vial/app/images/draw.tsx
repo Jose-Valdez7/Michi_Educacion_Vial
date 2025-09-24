@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { colors } from '../../src/utils/colors';
 import { ImagesApi } from '../../src/services/images';
 import { awardColoringTaskCompletion, maybeAwardColoringSetStar } from '../../src/services/progress2';
+import { ProgressApi } from '../../src/services/progress';
 
 const { width, height } = Dimensions.get('window');
 
@@ -38,26 +39,53 @@ export default function ImagesDraw() {
   const [brushSize, setBrushSize] = useState(8);
   const [title, setTitle] = useState('Mi dibujo');
   const [saving, setSaving] = useState(false);
-  const [showTools, setShowTools] = useState(true);
   const [renderKey, setRenderKey] = useState(0); // ✅ Forzar re-renderizado
+  const [isDrawing, setIsDrawing] = useState(false); // ✅ Evitar dibujo automático
+  const [completedTasks, setCompletedTasks] = useState<Record<TaskId, boolean>>({ cat: false, patrol: false, semaforo: false }); // ✅ Estado de tareas completadas
 
   const canvasRef = useRef<View>(null);
   const pathsRef = useRef<Array<{ color: string; size: number; points: Array<{ x: number; y: number }> }>>([]);
+
+  // ✅ Cargar estado de tareas completadas al iniciar
+  useEffect(() => {
+    (async () => {
+      try {
+        const p = await ProgressApi.get();
+        const set: Record<TaskId, boolean> = { cat: false, patrol: false, semaforo: false };
+        const list: string[] = Array.isArray(p.completedGames) ? p.completedGames : [];
+        set.cat = list.includes('1_coloring_cat');
+        set.patrol = list.includes('1_coloring_patrol');
+        set.semaforo = list.includes('1_coloring_semaforo');
+        setCompletedTasks(set);
+      } catch (e) {
+        console.warn('Error loading completed tasks:', e);
+      }
+    })();
+  }, []);
 
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     onPanResponderGrant: (evt) => {
+      if (isDrawing) return; // ✅ Evitar múltiples trazos simultáneos
+
+      setIsDrawing(true); // ✅ Marcar que estamos dibujando
       const { locationX, locationY } = evt.nativeEvent;
-      const newPath = {
-        color: selectedColor,
-        size: brushSize,
-        points: [{ x: locationX, y: locationY }]
-      };
-      pathsRef.current = [...pathsRef.current, newPath];
-      setRenderKey(prev => prev + 1); // ✅ Forzar re-renderizado
+
+      // ✅ Solo crear trazo si las coordenadas están dentro del canvas
+      if (locationX >= 0 && locationY >= 0 && locationX <= width && locationY <= height) {
+        const newPath = {
+          color: selectedColor,
+          size: brushSize,
+          points: [{ x: locationX, y: locationY }]
+        };
+        pathsRef.current = [...pathsRef.current, newPath];
+        setRenderKey(prev => prev + 1); // ✅ Forzar re-renderizado
+      }
     },
     onPanResponderMove: (evt) => {
+      if (!isDrawing) return; // ✅ Solo permitir movimiento si estamos dibujando
+
       const { locationX, locationY } = evt.nativeEvent;
       const currentPath = pathsRef.current[pathsRef.current.length - 1];
       if (currentPath) {
@@ -66,30 +94,56 @@ export default function ImagesDraw() {
       }
     },
     onPanResponderRelease: () => {
-      // Drawing completed
+      setIsDrawing(false); // ✅ Terminar dibujo
+    },
+    onPanResponderTerminate: () => {
+      setIsDrawing(false); // ✅ Terminar dibujo si se interrumpe
     },
   });
 
   const clearCanvas = () => {
-    Alert.alert(
-      'Limpiar Dibujo',
-      '¿Estás seguro de que quieres borrar todo el dibujo?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Limpiar', style: 'destructive', onPress: () => pathsRef.current = [] }
-      ]
-    );
+    pathsRef.current = []; // ✅ Limpiar automáticamente sin confirmación
+    setRenderKey(prev => prev + 1); // ✅ Forzar re-renderizado
   };
 
   const undoLast = () => {
     if (pathsRef.current.length > 0) {
-      pathsRef.current = pathsRef.current.slice(0, -1);
+      const lastPath = pathsRef.current[pathsRef.current.length - 1];
+
+      // ✅ Si el último trazo tiene el color seleccionado, eliminar el último punto
+      if (lastPath.color === selectedColor && lastPath.points.length > 0) {
+        lastPath.points.pop();
+        setRenderKey(prev => prev + 1); // ✅ Actualizar en tiempo real
+
+        // ✅ Si no quedan puntos en el último trazo, eliminar el trazo completo
+        if (lastPath.points.length === 0) {
+          pathsRef.current = pathsRef.current.slice(0, -1);
+        }
+      } else {
+        // ✅ Si no es del color seleccionado, eliminar el último trazo completo
+        pathsRef.current = pathsRef.current.slice(0, -1);
+      }
+      setRenderKey(prev => prev + 1); // ✅ Forzar re-renderizado
     }
   };
 
   const onSave = async () => {
     try {
       setSaving(true);
+
+      // ✅ DEBUG: Verificar que tenemos datos válidos
+      console.log('🔍 DEBUG ANTES DE ENVIAR:');
+      console.log('pathsRef.current:', pathsRef.current);
+      console.log('COLORS:', COLORS);
+      console.log('taskParam:', taskParam);
+      console.log('title:', title);
+
+      if (!pathsRef.current || pathsRef.current.length === 0) {
+        console.error('❌ ERROR: pathsRef.current está vacío');
+        Alert.alert('Error', 'No hay dibujo para guardar. Dibuja algo primero.');
+        return;
+      }
+
       const data = {
         title: title.trim() || 'Dibujo',
         taskId: taskParam,
@@ -97,21 +151,61 @@ export default function ImagesDraw() {
         colors: COLORS,
         baseImage: taskParam,
       };
-      await ImagesApi.create(data);
+
+      console.log('🚀 Enviando datos al backend:', {
+        title: data.title,
+        taskId: data.taskId,
+        pathsCount: data.paths?.length || 0,
+        colorsCount: data.colors?.length || 0,
+        baseImage: data.baseImage,
+        hasPaths: !!data.paths && data.paths.length > 0,
+        hasColors: !!data.colors && data.colors.length > 0,
+        hasTitle: !!data.title,
+        hasTaskId: !!data.taskId,
+        hasBaseImage: !!data.baseImage,
+        pathsData: data.paths,
+        colorsData: data.colors
+      });
+
       try {
-        // Marcar la tarea específica como completada para sumar 1/3 estrellas del nivel 1
+        console.log('🧪 Probando con endpoint de test...');
+        const result = await ImagesApi.test(data);
+        
+
+        // ✅ Marcar progreso después de guardar exitosamente
         await awardColoringTaskCompletion(taskParam, 8);
-        // Si ya están las 3 tareas, añade la clave resumen sin sumar puntos extra
-        try { await maybeAwardColoringSetStar(); } catch {}
-      } catch (e: any) {
-        // No bloquear navegación por error de progreso
-        console.warn('awardColoringLevel1Completion failed:', e?.message || e);
+        setCompletedTasks(prev => ({ ...prev, [taskParam]: true }));
+        await maybeAwardColoringSetStar();
+
+        Alert.alert('¡Guardado!', 'Tu dibujo se ha guardado y se registró tu progreso.', [
+          { text: 'Ir a Galería', onPress: () => router.push('/images/gallery') },
+        ]);
+      } catch (serverError: any) {
+        // Log the error details for debugging
+        console.error('Error al guardar el dibujo:', {
+          message: serverError?.message,
+          status: serverError?.status,
+          response: serverError?.response,
+          data: serverError?.data
+        });
+
+        // Show user-friendly error message
+        let errorMessage = 'Error interno del servidor';
+        if (serverError?.message?.includes('fetch')) {
+          errorMessage = 'No se puede conectar al servidor. Verifica que esté ejecutándose.';
+        } else if (serverError?.message?.includes('401')) {
+          errorMessage = 'Error de autenticación. Intenta reiniciar la aplicación.';
+        } else if (serverError?.message?.includes('500')) {
+          errorMessage = 'Error interno del servidor. Contacta al administrador.';
+        } else if (serverError?.message) {
+          errorMessage = serverError.message;
+        }
+
+        Alert.alert('Error al Guardar', errorMessage);
       }
-      Alert.alert('¡Guardado!', 'Tu dibujo se ha guardado y se registró tu progreso.', [
-        { text: 'Ir a Galería', onPress: () => router.replace('/images/gallery') },
-      ]);
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'No se pudo guardar');
+      
+      Alert.alert('Error', `Error inesperado: ${e?.message || 'Error desconocido'}`);
     } finally {
       setSaving(false);
     }
@@ -132,8 +226,15 @@ export default function ImagesDraw() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.backButtonText}>← Volver</Text>
+        </TouchableOpacity>
         <Text style={styles.title}>{taskInfo.emoji} {taskInfo.title}</Text>
         <Text style={styles.subtitle}>¡Colorea y diviértete!</Text>
+        {/* Sistema de estrellas */}
+        <View style={styles.starsContainer}>
+          <StarsRow completed={completedTasks} />
+        </View>
       </View>
 
       {/* Canvas Area */}
@@ -143,14 +244,14 @@ export default function ImagesDraw() {
           style={styles.canvas}
           {...panResponder.panHandlers}
         >
-          {/* Base Image */}
+          {/* Base Image - ENCIMA de los trazos para que los bordes no se borren */}
           <Image
             source={TASK_IMAGES[taskParam]}
             style={styles.baseImage}
             resizeMode="contain"
           />
 
-          {/* Drawing Paths */}
+          {/* Drawing Paths - DEBAJO de la imagen base */}
           {pathsRef.current.map((path, index) => (
             <View key={`${index}-${renderKey}`} style={styles.pathContainer}>
               {path.points.map((point, pointIndex) => (
@@ -173,65 +274,59 @@ export default function ImagesDraw() {
         </View>
       </View>
 
-      {/* Tools Panel */}
-      {showTools && (
-        <ScrollView style={styles.toolsContainer} showsVerticalScrollIndicator={false}>
-          {/* Color Palette */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🎨 Colores</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorsContainer}>
-              {COLORS.map((color, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.colorButton,
-                    { backgroundColor: color },
-                    selectedColor === color && styles.selectedColor
-                  ]}
-                  onPress={() => setSelectedColor(color)}
-                />
-              ))}
-            </ScrollView>
-          </View>
+      {/* Tools Panel - SIEMPRE VISIBLE */}
+      <ScrollView style={styles.toolsContainer} showsVerticalScrollIndicator={false}>
+        {/* Color Palette */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🎨 Colores</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorsContainer}>
+            {COLORS.map((color, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.colorButton,
+                  { backgroundColor: color },
+                  selectedColor === color && styles.selectedColor
+                ]}
+                onPress={() => setSelectedColor(color)}
+              />
+            ))}
+          </ScrollView>
+        </View>
 
-          {/* Brush Size */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>✏️ Tamaño del Pincel</Text>
-            <View style={styles.brushSizes}>
-              {[4, 8, 12, 16, 20].map((size) => (
-                <TouchableOpacity
-                  key={size}
-                  style={[
-                    styles.brushSize,
-                    { width: size * 2, height: size * 2 },
-                    brushSize === size && styles.selectedBrushSize
-                  ]}
-                  onPress={() => setBrushSize(size)}
-                />
-              ))}
-            </View>
+        {/* Brush Size */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>✏️ Tamaño del Pincel</Text>
+          <View style={styles.brushSizes}>
+            {[4, 8, 12, 16, 20].map((size) => (
+              <TouchableOpacity
+                key={size}
+                style={[
+                  styles.brushSize,
+                  { width: size * 2, height: size * 2 },
+                  brushSize === size && styles.selectedBrushSize
+                ]}
+                onPress={() => setBrushSize(size)}
+              />
+            ))}
           </View>
+        </View>
 
-          {/* Title Input */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📝 Título</Text>
-            <TextInput
-              style={styles.titleInput}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Mi dibujo genial"
-              placeholderTextColor={colors.gray}
-            />
-          </View>
-        </ScrollView>
-      )}
+        {/* Title Input */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📝 Título</Text>
+          <TextInput
+            style={styles.titleInput}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Mi dibujo genial"
+            placeholderTextColor={colors.gray}
+          />
+        </View>
+      </ScrollView>
 
       {/* Action Buttons */}
       <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.toolButton} onPress={() => setShowTools(!showTools)}>
-          <Text style={styles.toolButtonText}>{showTools ? '🔧' : '🎨'}</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity style={styles.toolButton} onPress={undoLast}>
           <Text style={styles.toolButtonText}>↶</Text>
         </TouchableOpacity>
@@ -251,6 +346,18 @@ export default function ImagesDraw() {
   );
 }
 
+// ✅ Componente de estrellas para mostrar progreso
+function StarsRow({ completed }: { completed: Record<'cat' | 'patrol' | 'semaforo', boolean> }) {
+  const count = (completed.cat ? 1 : 0) + (completed.patrol ? 1 : 0) + (completed.semaforo ? 1 : 0);
+  return (
+    <View style={{ flexDirection: 'row', alignSelf: 'center', gap: 6, marginVertical: 6 }}>
+      {[1, 2, 3].map((i) => (
+        <Text key={i} style={{ fontSize: 20 }}>{i <= count ? '⭐' : '☆'}</Text>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -261,6 +368,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     marginBottom: 10,
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 20,
+    top: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  backButtonText: {
+    color: colors.white,
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  starsContainer: {
+    marginTop: 8,
   },
   title: {
     fontSize: width < 400 ? 24 : 28,
@@ -291,6 +416,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     position: 'absolute',
+    zIndex: 10, // ✅ Imagen base ENCIMA de los trazos
   },
   pathContainer: {
     position: 'absolute',
@@ -298,6 +424,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 1, // ✅ Trazos DEBAJO de la imagen base
   },
   pathPoint: {
     position: 'absolute',

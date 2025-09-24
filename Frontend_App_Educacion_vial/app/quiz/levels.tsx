@@ -22,7 +22,7 @@ export default function QuizLevels() {
       const quizProgress = await QuizProgressService.getProgress();
       setProgress(quizProgress);
     } catch (error) {
-      console.error('Error loading progress:', error);
+      
     } finally {
       setLoading(false);
     }

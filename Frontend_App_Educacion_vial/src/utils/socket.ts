@@ -16,13 +16,13 @@ export const socket: Socket = io(URL, {
 
 // Manejadores de eventos para depuración
 socket.on('connect', () => {
-  console.log('Conectado al servidor de socket');
+  
 });
 
 socket.on('disconnect', (reason) => {
-  console.log('Desconectado del servidor de socket:', reason);
+  
 });
 
 socket.on('connect_error', (error) => {
-  console.error('Error de conexión de socket:', error);
+  
 });
