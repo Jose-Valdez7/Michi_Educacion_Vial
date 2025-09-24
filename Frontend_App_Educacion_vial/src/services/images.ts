@@ -55,9 +55,16 @@ export const ImagesApi = {
     const requestBody = JSON.stringify(data);
     console.log('🔍 [ImagesApi.create] JSON enviado:', requestBody);
 
+    const headers = {
+      'Content-Type': 'application/json', // ✅ Configurar primero
+      ...AuthService.headersWithAuth(accessToken), // ✅ Luego los headers de auth
+    };
+
+    console.log('🔍 [ImagesApi.create] Headers enviados:', headers);
+
     return api.request(`/images/${childId}`, { // ✅ Usar endpoint normal de creación
       method: 'POST',
-      headers: AuthService.headersWithAuth(accessToken),
+      headers: headers,
       body: requestBody,
     });
   },
