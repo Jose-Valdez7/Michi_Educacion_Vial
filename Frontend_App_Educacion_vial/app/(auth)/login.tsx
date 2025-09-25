@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Animated, Dimensions, Image, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Animated, Dimensions, Image, SafeAreaView, Easing } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href, useFocusEffect } from 'expo-router';
 import { AuthService } from '@/services/auth';
@@ -14,11 +15,15 @@ export default function LoginScreen() {
   const [userName, setUserName] = useState('');
   const [cedula, setCedula] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showHint, setShowHint] = useState(false);
 
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const bounceAnim = useRef(new Animated.Value(1)).current;
+  const bgBase = useRef(new Animated.Value(0)).current;
+  const bgProgress = Animated.modulo(bgBase, 1);
 
   useEffect(() => {
     Animated.parallel([
@@ -27,6 +32,25 @@ export default function LoginScreen() {
       animations.pulse(bounceAnim, 2000),
     ]).start();
   }, []);
+
+  useEffect(() => {
+    const duration = 12000;
+    bgBase.setValue(0);
+    const loop = Animated.loop(
+      Animated.timing(bgBase, {
+        toValue: 1,
+        duration,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+      { resetBeforeIteration: true }
+    );
+    loop.start();
+    return () => {
+      bgBase.stopAnimation();
+      loop.stop();
+    };
+  }, [bgBase]);
 
   const onLogin = async () => {
     if (!userName || !cedula) {
@@ -84,71 +108,103 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-          {/* Logo */}
-          <Animated.View style={[styles.logoContainer, { transform: [{ scale: bounceAnim }] }]}>
-            <Image source={require('../../assets/images/logoPrincipal.png')} style={styles.logoImage} resizeMode="contain" />
-          </Animated.View>
+        <View style={styles.bgContainer} pointerEvents="none">
+          <Animated.Image
+            source={require('../../assets/images/fondo_login.png')}
+            style={[styles.bgImage, { transform: [{ translateY: Animated.add(Animated.multiply(bgProgress, height), -height) }] }]}
+            resizeMode="cover"
+          />
+          <Animated.Image
+            source={require('../../assets/images/fondo_login.png')}
+            style={[styles.bgImage, { transform: [{ translateY: Animated.multiply(bgProgress, height) }] }]}
+            resizeMode="cover"
+          />
+          <Animated.Image
+            source={require('../../assets/images/fondo_login.png')}
+            style={[styles.bgImage, { transform: [{ translateY: Animated.add(Animated.multiply(bgProgress, height), height) }] }]}
+            resizeMode="cover"
+          />
+         </View>
+         <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+           {/* Logo */}
+           <Animated.View style={[styles.logoContainer, { transform: [{ scale: bounceAnim }] }]}>
+             <Image source={require('../../assets/images/logoPrincipal.png')} style={styles.logoImage} resizeMode="contain" />
+           </Animated.View>
 
-          <View style={styles.header}>
-            <Text style={styles.title}>Educación Vial</Text>
-            <Text style={styles.subtitle}>¡Aprende jugando!</Text>
-          </View>
+           {/* Tarjeta contenedora */}
+           <View style={styles.card}>
+             <Text style={styles.cardTitle}>INICIAR SESION</Text>
 
-          <View style={styles.form}>
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>👤 Usuario</Text>
-              <TextInput
-                style={styles.input}
-                value={userName}
-                onChangeText={setUserName}
-                placeholder="Ingresa tu usuario"
-                placeholderTextColor={colors.textSecondary}
-                autoCapitalize="none"
-              />
-            </View>
+             <View style={styles.form}>
+               {/* Username */}
+               <View style={styles.fieldBlock}>
+                 <Text style={styles.fieldLabel}>Username</Text>
+                 <View style={styles.fieldRow}>
+                   <Ionicons name="person-outline" size={20} color="#000000" style={styles.fieldIcon} />
+                   <TextInput
+                     style={styles.fieldInput}
+                     value={userName}
+                     onChangeText={setUserName}
+                     placeholder="example16"
+                     placeholderTextColor="#9CA3AF"
+                     autoCapitalize="none"
+                   />
+                 </View>
+                 <View style={styles.underline} />
+               </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>🔒 Contraseña</Text>
-              <TextInput
-                style={styles.input}
-                value={cedula}
-                onChangeText={setCedula}
-                placeholder="Ingresa tu contraseña"
-                placeholderTextColor={colors.textSecondary}
-                secureTextEntry
-              />
-            </View>
+               {/* Password */}
+               <View style={styles.fieldBlock}>
+                 <Text style={styles.fieldLabel}>Password</Text>
+                 <View style={styles.fieldRow}>
+                   <Ionicons name="lock-closed-outline" size={20} color="#000000" style={styles.fieldIcon} />
+                   <TextInput
+                     style={styles.fieldInput}
+                     value={cedula}
+                     onChangeText={setCedula}
+                     placeholder="••••••••"
+                     placeholderTextColor="#9CA3AF"
+                     secureTextEntry={!showPassword}
+                   />
+                   <TouchableOpacity onPress={() => setShowPassword((v) => !v)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                     <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9CA3AF" />
+                   </TouchableOpacity>
+                 </View>
+                 <View style={styles.underline} />
+                 <TouchableOpacity onPress={() => setShowHint(true)} style={styles.forgotWrapper}>
+                   <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+                 </TouchableOpacity>
+               </View>
 
-            <TouchableOpacity style={styles.loginButton} onPress={onLogin} activeOpacity={0.8} disabled={loading}>
-              <LinearGradient colors={colors.gradientPrimary} style={styles.buttonGradient}>
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.buttonText}>🎮 Ingresar al Juego</Text>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
+               {/* Botón LOGIN */}
+               <TouchableOpacity style={styles.primaryButton} activeOpacity={0.9} onPress={onLogin} disabled={loading}>
+                 {loading ? (
+                   <ActivityIndicator color="#fff" />
+                 ) : (
+                   <Text style={styles.primaryButtonText}>INGRESAR</Text>
+                 )}
+               </TouchableOpacity>
 
-            <TouchableOpacity style={styles.registerButton} onPress={onRegister} activeOpacity={0.8}>
-              <LinearGradient colors={colors.gradientSecondary} style={styles.buttonGradient}>
-                <Text style={styles.buttonText}>📝 Registrarse</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.clearButton} onPress={onClearData} activeOpacity={0.8}>
-              <LinearGradient colors={colors.gradientAccent} style={styles.buttonGradient}>
-                <Text style={styles.buttonText}>🗑️ Limpiar Datos</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.tempButton} onPress={onFillCreds} activeOpacity={0.8}>
-              <LinearGradient colors={colors.gradientWarning} style={styles.buttonGradient}>
-                <Text style={styles.buttonText}>⚡Llenar Credenciales (Temporal)</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+               {/* Sign up link */}
+               <TouchableOpacity onPress={onRegister} style={styles.signupWrapper}>
+                 <Text style={styles.signupText}>¿No tienes cuenta? <Text style={styles.signupEmphasis}>Regístrate</Text></Text>
+               </TouchableOpacity>
+             </View>
+           </View>
         </Animated.View>
+
+        {/* Modal de pista */}
+        {showHint && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.hintCard}>
+              <Text style={styles.hintTitle}>💡 Pista</Text>
+              <Text style={styles.hintContent}>Recuerda que tu contraseña es tu número de cédula</Text>
+              <TouchableOpacity onPress={() => setShowHint(false)} style={styles.hintButton}>
+                <Text style={styles.hintButtonText}>Entendido</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -156,21 +212,35 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10, backgroundColor: colors.primary },
-  content: { width: width * 0.95, maxWidth: 400, alignItems: 'center' },
-  logoContainer: { alignItems: 'center', justifyContent: 'center', marginBottom: height < 700 ? 20 : 30 },
-  logoImage: { width: width < 400 ? 200 : 250, height: width < 400 ? 140 : 180 },
-  header: { alignItems: 'center', marginBottom: height < 700 ? 25 : 40 },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10, backgroundColor: colors.loginBackground },
+  bgContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', backgroundColor: colors.loginBackground },
+  bgImage: { position: 'absolute', width: '100%', height: height + 2 },
+  content: { width: width * 0.9, maxWidth: 400, alignItems: 'center', marginHorizontal: 20 },
+  logoContainer: { alignItems: 'center', justifyContent: 'center', marginBottom: height < 700 ? 5 : 8 },
+  logoImage: { width: width < 400 ? 280 : 320, height: width < 400 ? 200 : 240 },
+  header: { alignItems: 'center', marginBottom: height < 700 ? 8 : 12 },
   title: { fontSize: width < 400 ? 26 : 32, fontWeight: 'bold', color: colors.white, textAlign: 'center', marginBottom: 8, textShadowColor: colors.shadowDark as any, textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 4, lineHeight: width < 400 ? 32 : 38 },
   subtitle: { fontSize: width < 400 ? 16 : 18, color: colors.white, textAlign: 'center', fontWeight: '600' },
-  form: { width: '100%' },
-  inputContainer: { marginBottom: height < 700 ? 15 : 20 },
-  inputLabel: { fontSize: width < 400 ? 14 : 16, color: colors.white, marginBottom: 6, fontWeight: '600' },
-  input: { backgroundColor: colors.white, borderRadius: width < 400 ? 20 : 25, paddingHorizontal: width < 400 ? 15 : 20, paddingVertical: width < 400 ? 12 : 15, fontSize: width < 400 ? 14 : 16, color: colors.textPrimary, shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5, minHeight: width < 400 ? 45 : 50 },
-  loginButton: { marginTop: height < 700 ? 15 : 20, marginBottom: height < 700 ? 10 : 15, borderRadius: width < 400 ? 20 : 25, shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4.65, elevation: 8 },
-  registerButton: { marginBottom: height < 700 ? 10 : 15, borderRadius: width < 400 ? 20 : 25, shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4.65, elevation: 8 },
-  clearButton: { marginBottom: height < 700 ? 10 : 15, borderRadius: width < 400 ? 20 : 25, shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5 },
-  tempButton: { marginBottom: height < 700 ? 40 : 50, borderRadius: width < 400 ? 20 : 25, shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5 },
-  buttonGradient: { paddingVertical: width < 400 ? 15 : 18, paddingHorizontal: width < 400 ? 25 : 30, borderRadius: width < 400 ? 20 : 25, alignItems: 'center', minHeight: width < 400 ? 50 : 55, justifyContent: 'center' },
-  buttonText: { color: colors.white, fontSize: width < 400 ? 16 : 18, fontWeight: 'bold', textAlign: 'center' },
+  card: { width: '100%', maxWidth: 420, backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 18, paddingVertical: 18, paddingHorizontal: 16, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8, marginTop: height * 0.05, marginBottom: height * 0.15 },
+  cardTitle: { textAlign: 'center', color: '#000000', fontSize: 22, fontWeight: '800', marginBottom: 8 },
+  form: { width: '100%', marginTop: 6 },
+  fieldBlock: { marginTop: 8, marginBottom: 10 },
+  fieldLabel: { color: '#000000', fontSize: 14, marginBottom: 6, fontWeight: '600' },
+  fieldRow: { flexDirection: 'row', alignItems: 'center' },
+  fieldIcon: { marginRight: 8 },
+  fieldInput: { flex: 1, fontSize: 16, color: '#111827', paddingVertical: 8 },
+  underline: { height: 1, backgroundColor: '#E5E7EB' },
+  forgotWrapper: { marginTop: 8, alignSelf: 'flex-end' },
+  forgotText: { color: '#000000', fontSize: 12, textDecorationLine: 'underline' },
+  primaryButton: { marginTop: 14, backgroundColor: '#32CD32', borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, shadowColor: '#32CD32', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
+  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
+  signupWrapper: { marginTop: 12, alignItems: 'center' },
+  signupText: { color: '#000000', fontSize: 12 },
+  signupEmphasis: { textDecorationLine: 'underline', fontWeight: '700' },
+  modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+  hintCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, marginHorizontal: 20, maxWidth: 300, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 10 },
+  hintTitle: { fontSize: 20, fontWeight: 'bold', color: '#000000', textAlign: 'center', marginBottom: 12 },
+  hintContent: { fontSize: 16, color: '#374151', textAlign: 'center', marginBottom: 20, lineHeight: 22 },
+  hintButton: { backgroundColor: '#FD935D', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24, alignItems: 'center' },
+  hintButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });

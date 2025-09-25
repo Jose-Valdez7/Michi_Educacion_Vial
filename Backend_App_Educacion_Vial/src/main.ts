@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -31,6 +32,7 @@ async function bootstrap() {
     'http://localhost:8000',
     'http://localhost:8081',
     'http://localhost:8080',
+    'http://localhost:8081',
     'http://localhost:9999',
     'https://ovvtv10-anonymous-8081.exp.direct',
     'http://localhost:*', // Permitir cualquier puerto localhost
