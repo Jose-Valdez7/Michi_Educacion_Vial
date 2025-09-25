@@ -16,6 +16,17 @@ export class ImagesController {
     return this.imagesService.list(childId);
   }
 
+  @Post(':childId')
+  @UseGuards(AuthGuard)
+  create(
+    @Param('childId') childId: string,
+    @Body() body: CreateImageDto,
+    @Child() child: CurrentChild,
+  ) {
+    if (child.id !== childId) throw new ForbiddenException('Forbidden');
+    return this.imagesService.create(childId, body);
+  }
+
   @Post(':childId/test')
   @UseGuards(AuthGuard)
   testEndpoint(
