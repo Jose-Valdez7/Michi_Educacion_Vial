@@ -2,8 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Dimensions, PanResponder, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import ViewShot from 'react-native-view-shot';
 import { colors } from '../../src/utils/colors';
 import { ImagesApi } from '../../src/services/images';
+import { AuthService } from '../../src/services/auth';
 import { awardColoringTaskCompletion, maybeAwardColoringSetStar } from '../../src/services/progress2';
 import { ProgressApi } from '../../src/services/progress';
 
@@ -44,6 +46,7 @@ export default function ImagesDraw() {
   const [completedTasks, setCompletedTasks] = useState<Record<TaskId, boolean>>({ cat: false, patrol: false, semaforo: false }); // ✅ Estado de tareas completadas
 
   const canvasRef = useRef<View>(null);
+  const viewShotRef = useRef<ViewShot>(null);
   const pathsRef = useRef<Array<{ color: string; size: number; points: Array<{ x: number; y: number }> }>>([]);
 
   // ✅ Cargar estado de tareas completadas al iniciar
@@ -136,18 +139,54 @@ export default function ImagesDraw() {
         return;
       }
 
-      const data = {
-        title: title.trim() || 'Dibujo',
-        taskId: taskParam,
-        paths: pathsRef.current,
-        colors: COLORS,
-        baseImage: taskParam,
-      };
+      // Capturar la pantalla del canvas
+      let capturedImageUri: string | null = null;
+      try {
+        if (viewShotRef.current && viewShotRef.current.capture) {
+          capturedImageUri = await viewShotRef.current.capture();
+        } else {
+          throw new Error('ViewShot no está disponible');
+        }
+      } catch (captureError) {
+        console.error('Error capturando pantalla:', captureError);
+        Alert.alert('Error', 'No se pudo capturar la imagen. Intenta de nuevo.');
+        return;
+      }
 
+      if (!capturedImageUri) {
+        Alert.alert('Error', 'No se pudo generar la imagen. Intenta de nuevo.');
+        return;
+      }
+
+      // Crear un FormData para enviar la imagen
+      const formData = new FormData();
+      formData.append('image', {
+        uri: capturedImageUri,
+        type: 'image/png',
+        name: `${title.trim() || 'Dibujo'}_${Date.now()}.png`,
+      } as any);
+      formData.append('title', title.trim() || 'Dibujo');
+      formData.append('taskId', taskParam);
+      formData.append('baseImage', taskParam);
 
       try {
-        const result = await ImagesApi.create(data);
-        
+        const { accessToken, childId } = await AuthService.getSession();
+        if (!accessToken || !childId) throw new Error('No session');
+
+        const response = await fetch(`http://localhost:3002/images/${childId}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'multipart/form-data',
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
 
         // ✅ Marcar progreso después de guardar exitosamente
         await awardColoringTaskCompletion(taskParam, 8);
@@ -158,8 +197,6 @@ export default function ImagesDraw() {
           { text: 'Ir a Galería', onPress: () => router.push('/images/gallery') },
         ]);
       } catch (serverError: any) {
-        // Error al guardar el dibujo
-
         // Show user-friendly error message
         let errorMessage = 'Error interno del servidor';
         if (serverError?.message?.includes('fetch')) {
@@ -175,7 +212,6 @@ export default function ImagesDraw() {
         Alert.alert('Error al Guardar', errorMessage);
       }
     } catch (e: any) {
-      
       Alert.alert('Error', `Error inesperado: ${e?.message || 'Error desconocido'}`);
     } finally {
       setSaving(false);
@@ -210,39 +246,49 @@ export default function ImagesDraw() {
 
       {/* Canvas Area */}
       <View style={styles.canvasContainer}>
-        <View
-          ref={canvasRef}
-          style={styles.canvas}
-          {...panResponder.panHandlers}
+        <ViewShot
+          ref={viewShotRef}
+          options={{ format: 'png', quality: 0.9 }}
         >
-          {/* Base Image - ENCIMA de los trazos para que los bordes no se borren */}
-          <Image
-            source={TASK_IMAGES[taskParam]}
-            style={styles.baseImage}
-            resizeMode="contain"
-          />
+          <View
+            ref={canvasRef}
+            style={styles.canvas}
+            {...panResponder.panHandlers}
+          >
+            {/* Base Image - DEBAJO de los trazos como fondo */}
+            <Image
+              source={TASK_IMAGES[taskParam]}
+              style={styles.baseImage}
+              resizeMode="contain"
+              onLoad={() => console.log('Imagen base cargada:', taskParam)}
+              onError={(error) => console.log('Error cargando imagen:', error)}
+            />
+            
+            {/* Debug text temporal */}
+            <Text style={styles.debugText}>Canvas activo - {taskParam}</Text>
 
-          {/* Drawing Paths - DEBAJO de la imagen base */}
-          {pathsRef.current.map((path, index) => (
-            <View key={`${index}-${renderKey}`} style={styles.pathContainer}>
-              {path.points.map((point, pointIndex) => (
-                <View
-                  key={`${pointIndex}-${renderKey}`}
-                  style={[
-                    styles.pathPoint,
-                    {
-                      backgroundColor: path.color,
-                      width: path.size,
-                      height: path.size,
-                      left: point.x - path.size / 2,
-                      top: point.y - path.size / 2,
-                    }
-                  ]}
-                />
-              ))}
-            </View>
-          ))}
-        </View>
+            {/* Drawing Paths - ENCIMA de la imagen base */}
+            {pathsRef.current.map((path, index) => (
+              <View key={`${index}-${renderKey}`} style={styles.pathContainer}>
+                {path.points.map((point, pointIndex) => (
+                  <View
+                    key={`${pointIndex}-${renderKey}`}
+                    style={[
+                      styles.pathPoint,
+                      {
+                        backgroundColor: path.color,
+                        width: path.size,
+                        height: path.size,
+                        left: point.x - path.size / 2,
+                        top: point.y - path.size / 2,
+                      }
+                    ]}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+        </ViewShot>
       </View>
 
       {/* Tools Panel - SIEMPRE VISIBLE */}
@@ -382,12 +428,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     position: 'relative',
     overflow: 'hidden',
+    minHeight: 300, // Asegurar altura mínima
+    borderWidth: 2,
+    borderColor: '#ddd', // Borde temporal para debug
   },
   baseImage: {
     width: '100%',
     height: '100%',
     position: 'absolute',
-    zIndex: 10, // ✅ Imagen base ENCIMA de los trazos
+    zIndex: 1, // ✅ Imagen base DEBAJO de los trazos
   },
   pathContainer: {
     position: 'absolute',
@@ -395,11 +444,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 1, // ✅ Trazos DEBAJO de la imagen base
+    zIndex: 10, // ✅ Trazos ENCIMA de la imagen base
   },
   pathPoint: {
     position: 'absolute',
     borderRadius: 50,
+  },
+  debugText: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    color: 'red',
+    fontSize: 12,
+    zIndex: 100,
   },
   toolsContainer: {
     maxHeight: height * 0.3,

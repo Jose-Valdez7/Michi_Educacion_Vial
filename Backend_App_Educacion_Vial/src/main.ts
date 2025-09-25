@@ -29,6 +29,7 @@ async function bootstrap() {
     'http://localhost:3003',
     'http://localhost:3004',
     'http://localhost:8000',
+    'http://localhost:8081',
     'http://localhost:8080',
     'http://localhost:9999',
     'http://localhost:*', // Permitir cualquier puerto localhost

@@ -5,6 +5,13 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { colors } from '@/utils/colors';
 import { ImagesApi, type ColoredImage } from '@/services/images';
 
+// Mapeo de las imágenes base para mostrar en la galería
+const TASK_IMAGES: Record<string, any> = {
+  cat: require('../../assets/images/gato-policia-bordes.png'),
+  patrol: require('../../assets/images/patrulla-bordes.png'),
+  semaforo: require('../../assets/images/semaforo-bordes.png'),
+};
+
 const { width, height } = Dimensions.get('window');
 
 export default function ImagesGallery() {
@@ -86,32 +93,29 @@ export default function ImagesGallery() {
               <Text numberOfLines={2} style={styles.cardTitle}>{item.data?.title || 'Dibujo'}</Text>
               <Text style={styles.cardDate}>{new Date(item.dateCreated).toLocaleDateString()}</Text>
 
-              {/* Display the drawing as a small preview */}
-              {item.data?.paths && item.data.paths.length > 0 && (
-                <View style={styles.drawingPreview}>
-                  <View style={styles.drawingContainer}>
-                    {item.data.paths.slice(0, 3).map((path: any, pathIndex: number) => (
-                      <View key={pathIndex} style={styles.pathContainer}>
-                        {path.points?.slice(0, 5).map((point: any, pointIndex: number) => (
-                          <View
-                            key={pointIndex}
-                            style={[
-                              styles.pathPoint,
-                              {
-                                backgroundColor: path.color || '#000',
-                                width: 3,
-                                height: 3,
-                                left: point.x * 0.1,
-                                top: point.y * 0.1,
-                              }
-                            ]}
-                          />
-                        ))}
-                      </View>
-                    ))}
-                  </View>
+              {/* Display the captured image */}
+              <View style={styles.drawingPreview}>
+                <View style={styles.drawingContainer}>
+                  {item.data?.imageUrl ? (
+                    <Image
+                      source={{ uri: item.data.imageUrl }}
+                      style={styles.capturedImage}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    /* Fallback: Show base image if captured image is not available */
+                    item.data?.baseImage && TASK_IMAGES[item.data.baseImage] ? (
+                      <Image
+                        source={TASK_IMAGES[item.data.baseImage]}
+                        style={styles.baseImagePreview}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Text style={styles.noImageText}>Sin imagen</Text>
+                    )
+                  )}
                 </View>
-              )}
+              </View>
 
               <View style={styles.cardButtons}>
                 <TouchableOpacity style={[styles.smallBtn, { backgroundColor: colors.buttonWarning }]} onPress={() => onDelete(item.id)}>
@@ -147,7 +151,10 @@ const styles = StyleSheet.create({
   cardTitle: { color: colors.textPrimary, fontWeight: '700' },
   cardDate: { color: colors.gray, fontSize: 12 },
   drawingPreview: { flex: 1, marginVertical: 8 },
-  drawingContainer: { width: '100%', height: 60, backgroundColor: 'white', borderRadius: 8, position: 'relative' },
+  drawingContainer: { width: '100%', height: 80, backgroundColor: 'white', borderRadius: 8, position: 'relative', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  capturedImage: { width: '100%', height: '100%' },
+  baseImagePreview: { width: '80%', height: '80%', position: 'absolute', opacity: 0.4 },
+  noImageText: { color: colors.gray, fontSize: 12 },
   pathContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   pathPoint: { position: 'absolute', borderRadius: 50 },
   cardButtons: { flexDirection: 'row', justifyContent: 'flex-end' },
