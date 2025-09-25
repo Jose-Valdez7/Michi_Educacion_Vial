@@ -5,10 +5,8 @@ export const colors = {
   accent: '#8B5CF6',
   accentLight: '#C4B5FD',
   background: '#FFFFFF',
-
   white: '#FFFFFF',
   black: '#1F2937',
-
   textPrimary: '#1F2937',
   textSecondary: '#6366F1',
   textWhite: '#FFFFFF',
@@ -20,21 +18,17 @@ export const colors = {
   buttonAccent: '#8B5CF6',
   buttonSuccess: '#10B981',
   buttonWarning: '#F59E0B',
-
   success: '#10B981',
   warning: '#F59E0B',
   error: '#EF4444',
   info: '#6366F1',
-
   green: '#10B981',
   lightGreen: '#34D399',
   lightBlue: '#A78BFA',
   gray: '#9CA3AF',
   lightGray: '#F3F4F6',
-
   shadow: 'rgba(99, 102, 241, 0.1)',
   shadowDark: 'rgba(99, 102, 241, 0.3)',
-
   gradientPrimary: ['#6366F1', '#A78BFA'] as const,
   gradientPrimaryLight: ['#EB4E02', '#FD935D'] as const,
   gradientSecondary: ['#A78BFA', '#C4B5FD'] as const,

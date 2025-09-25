@@ -3,9 +3,9 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityInd
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href, useFocusEffect } from 'expo-router';
-import { AuthService } from '../../src/services/auth';
-import { colors } from '../../src/utils/colors';
-import { animations } from '../../src/utils/animations';
+import { AuthService } from '@/services/auth';
+import { colors } from '@/utils/colors';
+import { animations } from '@/utils/animations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');

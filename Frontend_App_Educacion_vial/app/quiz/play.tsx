@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../../src/utils/colors';
+import { colors } from '@/utils/colors';
 import { useRouter, useLocalSearchParams, type Href } from 'expo-router';
 import questions from './questions';
-import { QuizProgressService } from '../../src/services/quizProgress';
+import { QuizProgressService } from '@/services/quizProgress';
 
 // Mapeo de imágenes para las preguntas (completamente opcional)
 const questionImages: { [key: string]: any } = {};

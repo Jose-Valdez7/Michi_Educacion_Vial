@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../../src/utils/colors';
+import { colors } from '@/utils/colors';
 import { useRouter, type Href } from 'expo-router';
 import { Dimensions } from 'react-native';
 
