@@ -2,8 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Dimensions, PanResponder, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import ViewShot from 'react-native-view-shot';
 import { colors } from '../../src/utils/colors';
 import { ImagesApi } from '../../src/services/images';
+import { AuthService } from '../../src/services/auth';
 import { awardColoringTaskCompletion, maybeAwardColoringSetStar } from '../../src/services/progress2';
 import { ProgressApi } from '../../src/services/progress';
 
@@ -44,6 +46,7 @@ export default function ImagesDraw() {
   const [completedTasks, setCompletedTasks] = useState<Record<TaskId, boolean>>({ cat: false, patrol: false, semaforo: false }); // ✅ Estado de tareas completadas
 
   const canvasRef = useRef<View>(null);
+  const viewShotRef = useRef<ViewShot>(null);
   const pathsRef = useRef<Array<{ color: string; size: number; points: Array<{ x: number; y: number }> }>>([]);
 
   // ✅ Cargar estado de tareas completadas al iniciar
@@ -130,24 +133,84 @@ export default function ImagesDraw() {
   const onSave = async () => {
     try {
       setSaving(true);
+      console.log('Iniciando proceso de guardado...');
 
       if (!pathsRef.current || pathsRef.current.length === 0) {
         Alert.alert('Error', 'No hay dibujo para guardar. Dibuja algo primero.');
         return;
       }
 
-      const data = {
+      console.log('Dibujos encontrados:', pathsRef.current.length);
+
+      // Capturar la pantalla del canvas
+      let capturedImageUri: string | null = null;
+      try {
+        console.log('Intentando capturar pantalla...');
+        if (viewShotRef.current && viewShotRef.current.capture) {
+          capturedImageUri = await viewShotRef.current.capture();
+          console.log('Imagen capturada exitosamente:', capturedImageUri ? 'Sí' : 'No');
+        } else {
+          throw new Error('ViewShot no está disponible');
+        }
+      } catch (captureError) {
+        console.error('Error capturando pantalla:', captureError);
+        Alert.alert('Error', 'No se pudo capturar la imagen. Intenta de nuevo.');
+        return;
+      }
+
+      if (!capturedImageUri) {
+        Alert.alert('Error', 'No se pudo generar la imagen. Intenta de nuevo.');
+        return;
+      }
+
+      console.log('URI de imagen capturada:', capturedImageUri);
+
+      // Crear un FormData para enviar la imagen
+      const formData = new FormData();
+      formData.append('image', {
+        uri: capturedImageUri,
+        type: 'image/png',
+        name: `${title.trim() || 'Dibujo'}_${Date.now()}.png`,
+      } as any);
+      formData.append('title', title.trim() || 'Dibujo');
+      formData.append('taskId', taskParam);
+      formData.append('baseImage', taskParam);
+
+      console.log('FormData creado con:', {
         title: title.trim() || 'Dibujo',
         taskId: taskParam,
-        paths: pathsRef.current,
-        colors: COLORS,
-        baseImage: taskParam,
-      };
-
+        baseImage: taskParam
+      });
 
       try {
-        const result = await ImagesApi.create(data);
+        console.log('Obteniendo sesión...');
+        const { accessToken, childId } = await AuthService.getSession();
+        if (!accessToken || !childId) throw new Error('No session');
         
+        console.log('Sesión obtenida, childId:', childId);
+
+        const url = `http://localhost:3002/images/${childId}`;
+        console.log('Enviando a URL:', url);
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'multipart/form-data',
+          },
+          body: formData,
+        });
+
+        console.log('Respuesta del servidor:', response.status, response.statusText);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error del servidor:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('Respuesta exitosa del servidor:', result);
 
         // ✅ Marcar progreso después de guardar exitosamente
         await awardColoringTaskCompletion(taskParam, 8);
@@ -158,8 +221,6 @@ export default function ImagesDraw() {
           { text: 'Ir a Galería', onPress: () => router.push('/images/gallery') },
         ]);
       } catch (serverError: any) {
-        // Error al guardar el dibujo
-
         // Show user-friendly error message
         let errorMessage = 'Error interno del servidor';
         if (serverError?.message?.includes('fetch')) {
@@ -175,7 +236,6 @@ export default function ImagesDraw() {
         Alert.alert('Error al Guardar', errorMessage);
       }
     } catch (e: any) {
-      
       Alert.alert('Error', `Error inesperado: ${e?.message || 'Error desconocido'}`);
     } finally {
       setSaving(false);
@@ -210,39 +270,47 @@ export default function ImagesDraw() {
 
       {/* Canvas Area */}
       <View style={styles.canvasContainer}>
-        <View
-          ref={canvasRef}
-          style={styles.canvas}
-          {...panResponder.panHandlers}
+        <ViewShot
+          ref={viewShotRef}
+          options={{ format: 'png', quality: 0.9 }}
         >
-          {/* Base Image - ENCIMA de los trazos para que los bordes no se borren */}
-          <Image
-            source={TASK_IMAGES[taskParam]}
-            style={styles.baseImage}
-            resizeMode="contain"
-          />
+          <View
+            ref={canvasRef}
+            style={styles.canvas}
+            {...panResponder.panHandlers}
+          >
+            {/* Base Image - DEBAJO de los trazos como fondo */}
+            <Image
+              source={TASK_IMAGES[taskParam]}
+              style={styles.baseImage}
+              resizeMode="contain"
+              onLoad={() => console.log('Imagen base cargada:', taskParam)}
+              onError={(error) => console.log('Error cargando imagen:', error)}
+            />
+            
 
-          {/* Drawing Paths - DEBAJO de la imagen base */}
-          {pathsRef.current.map((path, index) => (
-            <View key={`${index}-${renderKey}`} style={styles.pathContainer}>
-              {path.points.map((point, pointIndex) => (
-                <View
-                  key={`${pointIndex}-${renderKey}`}
-                  style={[
-                    styles.pathPoint,
-                    {
-                      backgroundColor: path.color,
-                      width: path.size,
-                      height: path.size,
-                      left: point.x - path.size / 2,
-                      top: point.y - path.size / 2,
-                    }
-                  ]}
-                />
-              ))}
-            </View>
-          ))}
-        </View>
+            {/* Drawing Paths - ENCIMA de la imagen base */}
+            {pathsRef.current.map((path, index) => (
+              <View key={`${index}-${renderKey}`} style={styles.pathContainer}>
+                {path.points.map((point, pointIndex) => (
+                  <View
+                    key={`${pointIndex}-${renderKey}`}
+                    style={[
+                      styles.pathPoint,
+                      {
+                        backgroundColor: path.color,
+                        width: path.size,
+                        height: path.size,
+                        left: point.x - path.size / 2,
+                        top: point.y - path.size / 2,
+                      }
+                    ]}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+        </ViewShot>
       </View>
 
       {/* Tools Panel - SIEMPRE VISIBLE */}
@@ -382,12 +450,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     position: 'relative',
     overflow: 'hidden',
+    minHeight: 300, // Asegurar altura mínima
   },
   baseImage: {
     width: '100%',
     height: '100%',
     position: 'absolute',
-    zIndex: 10, // ✅ Imagen base ENCIMA de los trazos
+    zIndex: 1, // ✅ Imagen base DEBAJO de los trazos
   },
   pathContainer: {
     position: 'absolute',
@@ -395,7 +464,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 1, // ✅ Trazos DEBAJO de la imagen base
+    zIndex: 10, // ✅ Trazos ENCIMA de la imagen base
   },
   pathPoint: {
     position: 'absolute',

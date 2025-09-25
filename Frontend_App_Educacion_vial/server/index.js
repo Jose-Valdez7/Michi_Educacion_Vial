@@ -2,6 +2,9 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const config = require('./config');
 const questions = require('../app/quiz/questions.json');
 
@@ -14,6 +17,111 @@ app.use(cors({
   origin: config.cors.origin,
   methods: config.cors.methods
 }));
+
+// Configurar middleware para parsear JSON
+app.use(express.json());
+
+// Configurar multer para manejar archivos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
+
+// Almacenamiento en memoria para imágenes
+const images = new Map();
+
+// Endpoints para manejar imágenes
+app.post('/images/:childId', upload.single('image'), (req, res) => {
+  try {
+    const { childId } = req.params;
+    const { title, taskId, baseImage } = req.body;
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se proporcionó imagen' });
+    }
+    
+    const imageData = {
+      id: Date.now().toString(),
+      childId,
+      title: title || 'Dibujo',
+      taskId,
+      baseImage,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      path: req.file.path,
+      dateCreated: new Date().toISOString(),
+      data: {
+        title: title || 'Dibujo',
+        taskId,
+        baseImage,
+        imageUrl: `/uploads/${req.file.filename}`
+      }
+    };
+    
+    // Almacenar en memoria (en producción usar base de datos)
+    images.set(imageData.id, imageData);
+    
+    console.log('Imagen guardada:', imageData);
+    res.json(imageData);
+  } catch (error) {
+    console.error('Error guardando imagen:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Obtener imágenes de un niño
+app.get('/images/:childId', (req, res) => {
+  try {
+    const { childId } = req.params;
+    const childImages = Array.from(images.values())
+      .filter(img => img.childId === childId)
+      .sort((a, b) => new Date(b.dateCreated) - new Date(a.dateCreated));
+    
+    res.json(childImages);
+  } catch (error) {
+    console.error('Error obteniendo imágenes:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Eliminar imagen
+app.delete('/images/:childId/:imageId', (req, res) => {
+  try {
+    const { childId, imageId } = req.params;
+    const image = images.get(imageId);
+    
+    if (!image || image.childId !== childId) {
+      return res.status(404).json({ error: 'Imagen no encontrada' });
+    }
+    
+    // Eliminar archivo del sistema
+    if (fs.existsSync(image.path)) {
+      fs.unlinkSync(image.path);
+    }
+    
+    // Eliminar de memoria
+    images.delete(imageId);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error eliminando imagen:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Servir archivos estáticos
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Configurar Socket.IO
 const io = new Server(server, {
