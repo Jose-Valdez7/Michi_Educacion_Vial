@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
+import { ProgressApi } from '@/services/progress';
 import { colors } from '@/utils/colors';
 
 type Option = {
@@ -219,6 +220,7 @@ export default function BicycleGameScreen() {
   const lastFrameTime = useRef<number | null>(null);
   const roadOffsetRef = useRef(0);
   const lastCollisionAt = useRef<number>(0);
+  const invulnerableUntil = useRef<number>(0);
   
   // Question State
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
@@ -252,6 +254,9 @@ export default function BicycleGameScreen() {
 
   // Collision Detection
   const checkCollisions = useCallback(() => {
+    if (gameState !== GameState.Playing) return;
+    const now = Date.now();
+    if (now < invulnerableUntil.current) return;
     const playerCurrentX = (playerX.current as any)._value;
     const playerCurrentY = (playerY.current as any)._value;
     const playerRect = {
@@ -273,13 +278,14 @@ export default function BicycleGameScreen() {
         return;
       }
     }
-  }, [obstacles]);
+  }, [obstacles, gameState]);
 
   const handleCollision = useCallback(() => {
     const now = Date.now();
     // Cooldown of 1s to avoid multiple counts while overlapping
     if (now - lastCollisionAt.current < 1000) return;
     lastCollisionAt.current = now;
+    invulnerableUntil.current = now + 2000; // 2s invulnerable
 
     const newCollisions = collisionCount + 1;
     setCollisionCount(newCollisions);
@@ -289,6 +295,10 @@ export default function BicycleGameScreen() {
       setCollisionText(`Choques: ${newCollisions}/${MAX_COLLISIONS}`);
       setShowCollisionModal(true);
       setGameState(GameState.Paused);
+      // Nudge player slightly to reduce overlap
+      const currentY = (playerY.current as any)._value ?? SCREEN_HEIGHT * 0.8;
+      playerY.current.setValue(Math.max(SCREEN_HEIGHT * 0.2, currentY - 40));
+      lastFrameTime.current = null;
     }
   }, [collisionCount]);
 
@@ -313,6 +323,7 @@ export default function BicycleGameScreen() {
 
   // Check for Questions
   const checkForQuestion = useCallback(() => {
+    if (gameState !== GameState.Playing) return;
     if (askedCount >= 5) return;
     if (distance - lastQuestionDistance.current >= QUESTION_DISTANCE) {
       const nextIndex = askedCount; // 0..4
@@ -321,9 +332,10 @@ export default function BicycleGameScreen() {
         setCurrentQuestion(question);
         setGameState(GameState.Question);
         lastQuestionDistance.current = distance;
+        lastFrameTime.current = null; // prevent dt spike when resuming
       }
     }
-  }, [distance, askedCount]);
+  }, [distance, askedCount, gameState]);
 
   // Game Loop
   const gameLoop = useCallback(() => {
@@ -366,7 +378,9 @@ export default function BicycleGameScreen() {
       setLevel(newLevel);
     }
 
-    gameLoopRef.current = requestAnimationFrame(gameLoop);
+    if (gameState === GameState.Playing) {
+      gameLoopRef.current = requestAnimationFrame(gameLoop);
+    }
   }, [gameState, distance, level, spawnObstacle, checkCollisions, checkForQuestion]);
 
   // Start Game
@@ -429,6 +443,7 @@ export default function BicycleGameScreen() {
         setFeedback(null);
         setFeedbackStatus('neutral');
         // Win if 5 correct
+        lastFrameTime.current = null;
         setGameState(prev => (prev === GameState.Question && (correctCount + 1) >= 5 ? GameState.Completed : GameState.Playing));
       }, 2000);
     } else {
@@ -447,6 +462,7 @@ export default function BicycleGameScreen() {
           setSelectedOptionIds([]);
           setFeedback(null);
           setFeedbackStatus('neutral');
+          lastFrameTime.current = null;
         }, 2000);
       }
     }
@@ -667,6 +683,9 @@ export default function BicycleGameScreen() {
               onPress={() => {
                 setShowCollisionModal(false);
                 // Only resume if we are still paused (not game over)
+                lastFrameTime.current = null;
+                lastCollisionAt.current = Date.now();
+                invulnerableUntil.current = Date.now() + 2000; // 2s invulnerabilidad al reanudar
                 setGameState(GameState.Playing);
               }}
             >
@@ -680,10 +699,21 @@ export default function BicycleGameScreen() {
       <Modal visible={gameState === GameState.Completed} animationType="fade" transparent>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>🎉 ¡Juego completado!</Text>
-            <Text style={styles.modalScenario}>Respondiste correctamente 5 preguntas. ¡Excelente!</Text>
-            <TouchableOpacity style={styles.startButton} onPress={() => router.replace('/minigames/level1' as Href)}>
-              <Text style={styles.startButtonText}>Volver a Nivel 1</Text>
+            <Text style={styles.modalTitle}>🎉 ¡Felicidades!</Text>
+            <Text style={styles.modalScenario}>Has completado tu paseo en bicicleta respondiendo 5 preguntas correctamente.</Text>
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={async () => {
+                try {
+                  const p = await ProgressApi.get();
+                  const set = new Set<string>(Array.isArray(p.completedGames) ? p.completedGames : []);
+                  set.add('1_bicycle');
+                  await ProgressApi.update({ completedGames: Array.from(set) });
+                } catch {}
+                router.replace('/minigames/level1' as Href);
+              }}
+            >
+              <Text style={styles.startButtonText}>Continuar</Text>
             </TouchableOpacity>
           </View>
         </View>
