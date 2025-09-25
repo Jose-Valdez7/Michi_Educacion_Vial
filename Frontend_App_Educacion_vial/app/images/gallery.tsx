@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Dimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { colors } from '../../src/utils/colors';
-import { ImagesApi, type ColoredImage } from '../../src/services/images';
+import { colors } from '@/utils/colors';
+import { ImagesApi, type ColoredImage } from '@/services/images';
 
 const { width, height } = Dimensions.get('window');
 
@@ -16,20 +16,9 @@ export default function ImagesGallery() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('📱 Cargando galería...');
       const data = await ImagesApi.list();
-      console.log('📱 Galería cargada:', {
-        itemsCount: data.length,
-        items: data.map(item => ({
-          id: item.id,
-          title: item.data?.title,
-          taskId: item.data?.taskId,
-          dateCreated: item.dateCreated
-        }))
-      });
       setItems(data);
     } catch (e: any) {
-      console.error('❌ Error cargando galería:', e);
       Alert.alert('Error', e?.message || 'No se pudo cargar la galería');
     } finally {
       setLoading(false);
@@ -39,7 +28,6 @@ export default function ImagesGallery() {
   // Use useFocusEffect to reload when screen gains focus
   useFocusEffect(
     useCallback(() => {
-      console.log('🔄 Galería enfocada - recargando...');
       load();
     }, [load])
   );

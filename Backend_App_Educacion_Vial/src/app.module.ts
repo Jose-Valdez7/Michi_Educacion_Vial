@@ -1,15 +1,14 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { LoginModule } from './child/login/login.module';
-import { AuthModule } from './shared/auth/auth.module';
-import { ProgressModule } from './game/progress/progress.module';
-import { AlbumModule } from './game/album/album.module';
-import { ImagesModule } from './game/images/images.module';
-import { GameModule } from './game/game.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { ProgressModule } from './modules/game/progress/progress.module';
+import { AlbumModule } from './modules/game/album/album.module';
+import { ImagesModule } from './modules/game/images/images.module';
+import { GameModule } from './modules/game/game.module';
 
 @Module({
-  imports: [LoginModule, AuthModule, ProgressModule, AlbumModule, ImagesModule, GameModule],
+  imports: [AuthModule, ProgressModule, AlbumModule, ImagesModule, GameModule],
   controllers: [AppController],
   providers: [AppService],
 })

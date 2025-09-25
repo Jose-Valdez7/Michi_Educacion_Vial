@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../../src/utils/colors';
+import { colors } from '@/utils/colors';
 import { useRouter, type Href } from 'expo-router';
 import { Dimensions } from 'react-native';
-import { QuizProgressService, type QuizProgress } from '../../src/services/quizProgress';
+import { QuizProgressService, type QuizProgress } from '@/services/quizProgress';
 
 const { width, height } = Dimensions.get('window');
 

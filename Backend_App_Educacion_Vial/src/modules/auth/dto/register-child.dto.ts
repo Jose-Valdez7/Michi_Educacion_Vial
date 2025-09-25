@@ -9,7 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '../../../modules/auth/enums/role.enums';
+import { Role } from '../enums/role.enums';
 import { SexEnum } from '@prisma/client';
 
 export class RegisterChildDto {
@@ -37,14 +37,7 @@ export class RegisterChildDto {
 
 
 
-  @ApiProperty({
-    description: 'Nombre de usuario del niño',
-    example: 'juanperez',
-    minLength: 1,
-  })
-  @IsNotEmpty()
-  @IsString()
-  username: string;
+  
 
 
 
