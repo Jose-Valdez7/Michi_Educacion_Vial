@@ -81,7 +81,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       // En desarrollo, mostrar el error completo
       if (process.env.NODE_ENV === 'development') {
         message = exception.message;
-        console.error('Error stack:', exception.stack);
       }
     } else {
       status = HttpStatus.INTERNAL_SERVER_ERROR;

@@ -12,21 +12,9 @@ export const ImagesApi = {
     const { accessToken, childId } = await AuthService.getSession();
     if (!accessToken || !childId) throw new Error('No session');
 
-    console.log('📋 [ImagesApi.list] Solicitando lista de imágenes para childId:', childId);
-
     const result = await api.request(`/images/${childId}`, {
       headers: AuthService.headersWithAuth(accessToken),
     }) as ColoredImage[];
-
-    console.log('📋 [ImagesApi.list] Respuesta recibida:', {
-      count: result.length,
-      items: result.map((item: any) => ({
-        id: item.id,
-        title: item.data?.title,
-        taskId: item.data?.taskId,
-        dateCreated: item.dateCreated
-      }))
-    });
 
     return result;
   },
@@ -35,34 +23,14 @@ export const ImagesApi = {
     const { accessToken, childId } = await AuthService.getSession();
     if (!accessToken || !childId) throw new Error('No session');
 
-    console.log('🔍 [ImagesApi.create] Datos recibidos:', {
-      childId,
-      dataKeys: Object.keys(data),
-      dataType: typeof data,
-      hasTitle: !!data.title,
-      hasPaths: !!data.paths,
-      pathsCount: data.paths?.length || 0,
-      hasColors: !!data.colors,
-      colorsCount: data.colors?.length || 0,
-      hasBaseImage: !!data.baseImage,
-      title: data.title,
-      taskId: data.taskId,
-      baseImage: data.baseImage,
-      pathsData: data.paths,
-      colorsData: data.colors
-    });
-
     const requestBody = JSON.stringify(data);
-    console.log('🔍 [ImagesApi.create] JSON enviado:', requestBody);
 
     const headers = {
-      'Content-Type': 'application/json', // ✅ Configurar primero
-      ...AuthService.headersWithAuth(accessToken), // ✅ Luego los headers de auth
+      'Content-Type': 'application/json',
+      ...AuthService.headersWithAuth(accessToken),
     };
 
-    console.log('🔍 [ImagesApi.create] Headers enviados:', headers);
-
-    return api.request(`/images/${childId}`, { // ✅ Usar endpoint normal de creación
+    return api.request(`/images/${childId}`, {
       method: 'POST',
       headers: headers,
       body: requestBody,

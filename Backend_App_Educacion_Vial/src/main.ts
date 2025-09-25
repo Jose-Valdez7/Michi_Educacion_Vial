@@ -11,16 +11,8 @@ async function bootstrap() {
   app.use(require('body-parser').json({ limit: '10mb' }));
   app.use(require('body-parser').urlencoded({ extended: true, limit: '10mb' }));
 
-  // ✅ Agregar logging para debugging
+  // Middleware para procesar solicitudes
   app.use((req, res, next) => {
-    console.log('🌐 Solicitud HTTP recibida:', {
-      method: req.method,
-      path: req.path,
-      contentType: req.headers['content-type'],
-      hasBody: !!req.body,
-      bodyKeys: req.body ? Object.keys(req.body) : 'undefined',
-      bodySize: JSON.stringify(req.body).length
-    });
     next();
   });
 
@@ -46,7 +38,6 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      console.log('Solicitud desde origen:', origin);
       // Permitir solicitudes sin origen (como aplicaciones móviles o solicitudes de Postman)
       if (!origin) return callback(null, true);
       
@@ -62,14 +53,12 @@ async function bootstrap() {
       }
       
       const msg = 'El CORS policy no permite el acceso desde este origen.';
-      console.error(msg, { origin });
       return callback(new Error(msg), false);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
   
-  console.log('Configuración CORS completada. Orígenes permitidos:', allowedOrigins);
 
   // Configuración de WebSocket
   app.useWebSocketAdapter(new IoAdapter(app));
@@ -88,7 +77,5 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   await app.listen(3002);
-  console.log(`Servidor escuchando en: ${await app.getUrl()}`);
-  console.log(`Documentación de la API: ${await app.getUrl()}/api`);
 }
 bootstrap();

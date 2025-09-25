@@ -58,7 +58,7 @@ export default function ImagesDraw() {
         set.semaforo = list.includes('1_coloring_semaforo');
         setCompletedTasks(set);
       } catch (e) {
-        console.warn('Error loading completed tasks:', e);
+        // Error loading completed tasks
       }
     })();
   }, []);
@@ -131,15 +131,7 @@ export default function ImagesDraw() {
     try {
       setSaving(true);
 
-      // ✅ DEBUG: Verificar que tenemos datos válidos
-      console.log('🔍 DEBUG ANTES DE ENVIAR:');
-      console.log('pathsRef.current:', pathsRef.current);
-      console.log('COLORS:', COLORS);
-      console.log('taskParam:', taskParam);
-      console.log('title:', title);
-
       if (!pathsRef.current || pathsRef.current.length === 0) {
-        console.error('❌ ERROR: pathsRef.current está vacío');
         Alert.alert('Error', 'No hay dibujo para guardar. Dibuja algo primero.');
         return;
       }
@@ -152,23 +144,8 @@ export default function ImagesDraw() {
         baseImage: taskParam,
       };
 
-      console.log('🚀 Enviando datos al backend:', {
-        title: data.title,
-        taskId: data.taskId,
-        pathsCount: data.paths?.length || 0,
-        colorsCount: data.colors?.length || 0,
-        baseImage: data.baseImage,
-        hasPaths: !!data.paths && data.paths.length > 0,
-        hasColors: !!data.colors && data.colors.length > 0,
-        hasTitle: !!data.title,
-        hasTaskId: !!data.taskId,
-        hasBaseImage: !!data.baseImage,
-        pathsData: data.paths,
-        colorsData: data.colors
-      });
 
       try {
-        console.log('🎨 Guardando imagen con endpoint real...');
         const result = await ImagesApi.create(data);
         
 
@@ -181,13 +158,7 @@ export default function ImagesDraw() {
           { text: 'Ir a Galería', onPress: () => router.push('/images/gallery') },
         ]);
       } catch (serverError: any) {
-        // Log the error details for debugging
-        console.error('Error al guardar el dibujo:', {
-          message: serverError?.message,
-          status: serverError?.status,
-          response: serverError?.response,
-          data: serverError?.data
-        });
+        // Error al guardar el dibujo
 
         // Show user-friendly error message
         let errorMessage = 'Error interno del servidor';
