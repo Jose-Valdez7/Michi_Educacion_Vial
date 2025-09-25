@@ -32,6 +32,7 @@ async function bootstrap() {
     'http://localhost:8081',
     'http://localhost:8080',
     'http://localhost:9999',
+    'https://ovvtv10-anonymous-8081.exp.direct',
     'http://localhost:*', // Permitir cualquier puerto localhost
     'exp://192.168.68.110:19000', // Asegúrate de que esta sea la URL de tu Expo Go
     /^https?:\/\/192\.168\.68\.\d{1,3}:\d+$/, // Permite cualquier puerto en tu red local

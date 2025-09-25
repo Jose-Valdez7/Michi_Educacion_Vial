@@ -133,17 +133,22 @@ export default function ImagesDraw() {
   const onSave = async () => {
     try {
       setSaving(true);
+      console.log('Iniciando proceso de guardado...');
 
       if (!pathsRef.current || pathsRef.current.length === 0) {
         Alert.alert('Error', 'No hay dibujo para guardar. Dibuja algo primero.');
         return;
       }
 
+      console.log('Dibujos encontrados:', pathsRef.current.length);
+
       // Capturar la pantalla del canvas
       let capturedImageUri: string | null = null;
       try {
+        console.log('Intentando capturar pantalla...');
         if (viewShotRef.current && viewShotRef.current.capture) {
           capturedImageUri = await viewShotRef.current.capture();
+          console.log('Imagen capturada exitosamente:', capturedImageUri ? 'Sí' : 'No');
         } else {
           throw new Error('ViewShot no está disponible');
         }
@@ -158,6 +163,8 @@ export default function ImagesDraw() {
         return;
       }
 
+      console.log('URI de imagen capturada:', capturedImageUri);
+
       // Crear un FormData para enviar la imagen
       const formData = new FormData();
       formData.append('image', {
@@ -169,11 +176,23 @@ export default function ImagesDraw() {
       formData.append('taskId', taskParam);
       formData.append('baseImage', taskParam);
 
+      console.log('FormData creado con:', {
+        title: title.trim() || 'Dibujo',
+        taskId: taskParam,
+        baseImage: taskParam
+      });
+
       try {
+        console.log('Obteniendo sesión...');
         const { accessToken, childId } = await AuthService.getSession();
         if (!accessToken || !childId) throw new Error('No session');
+        
+        console.log('Sesión obtenida, childId:', childId);
 
-        const response = await fetch(`http://localhost:3002/images/${childId}`, {
+        const url = `http://localhost:3002/images/${childId}`;
+        console.log('Enviando a URL:', url);
+
+        const response = await fetch(url, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -182,11 +201,16 @@ export default function ImagesDraw() {
           body: formData,
         });
 
+        console.log('Respuesta del servidor:', response.status, response.statusText);
+
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+          const errorText = await response.text();
+          console.error('Error del servidor:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
         const result = await response.json();
+        console.log('Respuesta exitosa del servidor:', result);
 
         // ✅ Marcar progreso después de guardar exitosamente
         await awardColoringTaskCompletion(taskParam, 8);
@@ -264,8 +288,6 @@ export default function ImagesDraw() {
               onError={(error) => console.log('Error cargando imagen:', error)}
             />
             
-            {/* Debug text temporal */}
-            <Text style={styles.debugText}>Canvas activo - {taskParam}</Text>
 
             {/* Drawing Paths - ENCIMA de la imagen base */}
             {pathsRef.current.map((path, index) => (
@@ -429,8 +451,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     minHeight: 300, // Asegurar altura mínima
-    borderWidth: 2,
-    borderColor: '#ddd', // Borde temporal para debug
   },
   baseImage: {
     width: '100%',
@@ -449,14 +469,6 @@ const styles = StyleSheet.create({
   pathPoint: {
     position: 'absolute',
     borderRadius: 50,
-  },
-  debugText: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    color: 'red',
-    fontSize: 12,
-    zIndex: 100,
   },
   toolsContainer: {
     maxHeight: height * 0.3,

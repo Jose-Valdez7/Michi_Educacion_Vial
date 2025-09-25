@@ -98,7 +98,7 @@ export default function ImagesGallery() {
                 <View style={styles.drawingContainer}>
                   {item.data?.imageUrl ? (
                     <Image
-                      source={{ uri: item.data.imageUrl }}
+                      source={{ uri: `http://localhost:3002${item.data.imageUrl}` }}
                       style={styles.capturedImage}
                       resizeMode="contain"
                     />
