@@ -27,11 +27,46 @@ export class AuthService {
     registerChildDto: RegisterChildDto,
   ): Promise<BaseResponseDto<any>> {
     try {
-      const { cedula, name, role, birthdate, sex, username } = registerChildDto;
+      const { cedula, name, role, birthdate, sex } = registerChildDto;
+
+      // Generar username automáticamente SIEMPRE
+      let username: string;
+      {
+        const normalizedName = (name || '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z\s]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        const base = normalizedName.replace(/\s+/g, '');
+
+        const date = new Date(birthdate);
+        const dd = String(date.getDate()).padStart(2, '0');
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const yy = String(date.getFullYear()).slice(-2);
+        const suffix = `${dd}${mm}${yy}`;
+
+        let candidate = `${base}${suffix}`.slice(0, 20);
+
+        let counter = 0;
+        while (true) {
+          const exists = await this.prismaService.child.findFirst({
+            where: { username: candidate },
+            select: { id: true },
+          });
+          if (!exists) break;
+          counter += 1;
+          const counterStr = String(counter).padStart(2, '0');
+          const baseMax = 20 - counterStr.length;
+          candidate = `${base}${suffix}`.slice(0, baseMax) + counterStr;
+        }
+        username = candidate;
+      }
 
       // Verificar si el usuario ya existe (por cédula)
       const existingUser = await this.prismaService.child.findUnique({
-        where: { cedula }, // Usa 'username' si es único, o cambia a 'id' si corresponde
+        where: { cedula },
       });
 
       if (existingUser) {
@@ -40,25 +75,12 @@ export class AuthService {
         );
       }
 
-      // Verificar si el username ya está en uso
-      const existingUsername = await this.prismaService.child.findFirst({
-        where: { username },
-      });
-      if (existingUsername) {
-        throw new ResourceAlreadyExistsException(
-          'El nombre de usuario ya está en uso',
-        );
-      }
-
-      // Hashear la contraseña (usamos la cédula como contraseña inicial)
-      const hashedPassword = await bcrypt.hash(cedula, 10);
-
       // Crear el usuario en la base de datos
       const newChild = await this.prismaService.child.create({
         data: {
           cedula,
-          password: hashedPassword,
-          role: ['CHILD', role],
+          password: await bcrypt.hash(cedula, 10),
+          role: [role],
           name: name,
           birthDate: new Date(birthdate),
           username: username,
@@ -66,7 +88,6 @@ export class AuthService {
         },
       });
 
-      // Limpiar tokens revocados si el usuario ya existía (caso edge)
       await this.cleanupRevokedTokens(newChild.id);
 
       const tokens = await this.generateTokens(newChild);

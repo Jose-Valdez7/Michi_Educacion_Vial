@@ -37,7 +37,14 @@ export class RegisterChildDto {
 
 
 
-  
+  @ApiProperty({
+    description: 'Nombre de usuario del niño',
+    example: 'juanperez',
+    minLength: 1,
+  })
+  @IsNotEmpty()
+  @IsString()
+  username: string;
 
 
 
