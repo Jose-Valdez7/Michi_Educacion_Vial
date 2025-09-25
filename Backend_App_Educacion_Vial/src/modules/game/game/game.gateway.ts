@@ -41,11 +41,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private rooms = new Map<string, any>(); // Almacenar salas
 
   handleConnection(client: Socket) {
-    console.log('Cliente conectado:', client.id);
+    // Cliente conectado
   }
 
   handleDisconnect(client: Socket) {
-    console.log('Cliente desconectado:', client.id);
+    // Cliente desconectado
     // Limpiar salas cuando un jugador se desconecta
     this.rooms.forEach((room, roomCode) => {
       if (room.players[client.id]) {

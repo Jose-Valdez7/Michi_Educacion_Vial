@@ -22,43 +22,16 @@ export class ImagesService {
   }
 
   async create(childId: string, dto: CreateImageDto) {
-    console.log('📥 Recibiendo datos del frontend:', {
-      childId,
-      hasTitle: !!dto.title,
-      hasTaskId: !!dto.taskId,
-      hasPaths: !!dto.paths,
-      pathsCount: dto.paths?.length || 0,
-      hasColors: !!dto.colors,
-      colorsCount: dto.colors?.length || 0,
-      hasBaseImage: !!dto.baseImage,
-      title: dto.title,
-      taskId: dto.taskId,
-      baseImage: dto.baseImage
-    });
-
     // ✅ Validar que los datos existan
     if (!dto.title || !dto.taskId || !dto.paths || !dto.colors) {
-      console.error('❌ Datos del dibujo incompletos:', {
-        hasTitle: !!dto.title,
-        hasTaskId: !!dto.taskId,
-        hasPaths: !!dto.paths,
-        hasColors: !!dto.colors
-      });
       throw new Error('Datos del dibujo incompletos');
     }
 
-    console.log('✅ Creando imagen en base de datos...');
     const result = await this.prisma.coloredImage.create({
       data: {
         childId,
         data: dto, // ✅ Guardar todo el objeto dto como JSON
       },
-    });
-
-    console.log('✅ Imagen creada exitosamente:', {
-      id: result.id,
-      childId: result.childId,
-      dateCreated: result.dateCreated
     });
 
     return result;

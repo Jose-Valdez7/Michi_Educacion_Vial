@@ -34,16 +34,6 @@ export class ImagesController {
     @Body() body: any,
     @Child() child: CurrentChild,
   ) {
-    console.log('🧪 ENDPOINT DE PRUEBA recibió:', {
-      childId,
-      bodyType: typeof body,
-      hasBody: !!body,
-      bodyKeys: body ? Object.keys(body) : 'undefined',
-      bodyContent: body,
-      bodyString: JSON.stringify(body, null, 2),
-      timestamp: new Date().toISOString()
-    });
-
     if (child.id !== childId) throw new ForbiddenException('Forbidden');
 
     return {

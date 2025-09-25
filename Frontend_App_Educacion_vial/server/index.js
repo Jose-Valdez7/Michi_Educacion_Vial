@@ -62,7 +62,7 @@ function selectRandomQuestions(count) {
 
 // Manejar conexiones de Socket.IO
 io.on('connection', (socket) => {
-  console.log(`Nuevo cliente conectado: ${socket.id}`);
+  // Nuevo cliente conectado
   
   // Unirse a una sala
   socket.on('joinRoom', ({ roomCode, playerId, playerName }) => {
@@ -72,7 +72,6 @@ io.on('connection', (socket) => {
       // Si la sala no existe, el primer jugador la crea
       if (!room) {
         room = createRoom(roomCode, playerId, playerName);
-        console.log(`Sala creada: ${roomCode} por ${playerName}`);
       } 
       // Si la sala existe pero ya está en juego
       else if (room.gameState !== 'waiting') {
@@ -112,10 +111,7 @@ io.on('connection', (socket) => {
         players: room.players.map(id => players.get(id))
       });
       
-      console.log(`${playerName} se unió a la sala ${roomCode}`);
-      
     } catch (error) {
-      console.error('Error al unirse a la sala:', error);
       socket.emit('error', 'Error al unirse a la sala');
     }
   });
@@ -280,7 +276,7 @@ io.on('connection', (socket) => {
   
   // Manejar desconexiones
   socket.on('disconnect', () => {
-    console.log(`Cliente desconectado: ${socket.id}`);
+    // Cliente desconectado
     
     // Encontrar al jugador desconectado
     const player = Array.from(players.values()).find(p => p.socketId === socket.id);
@@ -320,15 +316,14 @@ io.on('connection', (socket) => {
 
 // Iniciar el servidor
 server.listen(config.port, () => {
-  console.log(`Servidor escuchando en el puerto ${config.port}`);
+  // Servidor iniciado
 });
 
 // Manejo de errores no capturados
 process.on('uncaughtException', (error) => {
-  console.error('Error no capturado:', error);
+  // Error no capturado
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Promesa rechazada no manejada:', reason);
-  console.error('Promesa:', promise);
+  // Promesa rechazada no manejada
 });

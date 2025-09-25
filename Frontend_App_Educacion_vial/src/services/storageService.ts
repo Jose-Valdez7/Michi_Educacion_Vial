@@ -18,7 +18,7 @@ export class StorageService {
     try {
       await AsyncStorage.setItem(this.KEYS.USER_DATA, JSON.stringify(userData));
     } catch (error) {
-      console.error('Error guardando datos del usuario:', error);
+      // Error guardando datos del usuario
     }
   }
 
@@ -27,7 +27,6 @@ export class StorageService {
       const data = await AsyncStorage.getItem(this.KEYS.USER_DATA);
       return data ? (JSON.parse(data) as T) : null;
     } catch (error) {
-      console.error('Error obteniendo datos del usuario:', error);
       return null;
     }
   }
@@ -36,7 +35,7 @@ export class StorageService {
     try {
       await AsyncStorage.setItem(this.KEYS.PROGRESS, JSON.stringify(progress));
     } catch (error) {
-      console.error('Error guardando progreso:', error);
+      // Error guardando progreso
     }
   }
 
@@ -45,7 +44,6 @@ export class StorageService {
       const data = await AsyncStorage.getItem(this.KEYS.PROGRESS);
       return data ? (JSON.parse(data) as T) : null;
     } catch (error) {
-      console.error('Error obteniendo progreso:', error);
       return null;
     }
   }
@@ -62,7 +60,7 @@ export class StorageService {
         this.KEYS.COLORED_IMAGES,
       ]);
     } catch (error) {
-      console.error('Error limpiando datos:', error);
+      // Error limpiando datos
     }
   }
 }

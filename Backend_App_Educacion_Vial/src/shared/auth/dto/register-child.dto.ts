@@ -9,7 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '../enums/role.enums';
+import { Role } from '../../../modules/auth/enums/role.enums';
 import { SexEnum } from '@prisma/client';
 
 export class RegisterChildDto {
