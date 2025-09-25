@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -38,7 +39,9 @@ async function bootstrap() {
     'http://localhost:3004',
     'http://localhost:8000',
     'http://localhost:8080',
+    'http://localhost:8081',
     'http://localhost:9999',
+    'exp://v4l4vge-anonymous-8081.exp.direct',
     'http://localhost:*', // Permitir cualquier puerto localhost
     'exp://192.168.68.110:19000', // Asegúrate de que esta sea la URL de tu Expo Go
     /^https?:\/\/192\.168\.68\.\d{1,3}:\d+$/, // Permite cualquier puerto en tu red local
