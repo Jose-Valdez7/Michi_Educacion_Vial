@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Dimensions, SafeAreaView } from 'react-native';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Dimensions, SafeAreaView, Animated, Image, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { colors } from '../../src/utils/colors';
@@ -22,6 +22,28 @@ export default function RegisterScreen() {
   const [sex, setSex] = useState<typeof SexOptions[number]>('MALE');
   const [submitting, setSubmitting] = useState(false);
   const [usernameDirty, setUsernameDirty] = useState(false);
+
+  // Animación fondo
+  const bgBase = useRef(new Animated.Value(0)).current;
+  const bgProgress = Animated.modulo(bgBase, 1);
+  useEffect(() => {
+    const duration = 12000;
+    bgBase.setValue(0);
+    const loop = Animated.loop(
+      Animated.timing(bgBase, {
+        toValue: 1,
+        duration,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+      { resetBeforeIteration: true }
+    );
+    loop.start();
+    return () => {
+      bgBase.stopAnimation();
+      loop.stop();
+    };
+  }, [bgBase]);
 
   const slugFromName = useMemo(() => {
     const s = name
@@ -75,22 +97,39 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        <View style={styles.bgContainer} pointerEvents="none">
+          <Animated.Image
+            source={require('../../assets/images/fondo_login.png')}
+            style={[styles.bgImage, { transform: [{ translateY: Animated.add(Animated.multiply(bgProgress, height), -height) }] }]}
+            resizeMode="cover"
+          />
+          <Animated.Image
+            source={require('../../assets/images/fondo_login.png')}
+            style={[styles.bgImage, { transform: [{ translateY: Animated.multiply(bgProgress, height) }] }]}
+            resizeMode="cover"
+          />
+          <Animated.Image
+            source={require('../../assets/images/fondo_login.png')}
+            style={[styles.bgImage, { transform: [{ translateY: Animated.add(Animated.multiply(bgProgress, height), height) }] }]}
+            resizeMode="cover"
+          />
+        </View>
         <Text style={styles.title}>Crear cuenta</Text>
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>👤 Nombre completo</Text>
-            <TextInput style={styles.input} value={name} onChangeText={onChangeName} placeholder="Juan Pérez" placeholderTextColor={colors.textSecondary} />
+            <TextInput style={styles.input} value={name} onChangeText={onChangeName} placeholder="Juan Pérez" placeholderTextColor={colors.gray} />
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>🪪 Cédula (10 dígitos)</Text>
-            <TextInput style={styles.input} value={cedula} onChangeText={setCedula} placeholder="1234567890" keyboardType="number-pad" maxLength={10} placeholderTextColor={colors.textSecondary} />
+            <TextInput style={styles.input} value={cedula} onChangeText={setCedula} placeholder="1234567890" keyboardType="number-pad" maxLength={10} placeholderTextColor={colors.gray} />
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>🎂 Nacimiento (YYYY-MM-DD)</Text>
-            <TextInput style={styles.input} value={birthdate} onChangeText={onChangeBirthdate} placeholder="2015-05-01" autoCapitalize="none" placeholderTextColor={colors.textSecondary} />
+            <TextInput style={styles.input} value={birthdate} onChangeText={onChangeBirthdate} placeholder="2015-05-01" autoCapitalize="none" placeholderTextColor={colors.gray} />
           </View>
 
           <View style={styles.inputContainer}>
@@ -101,7 +140,7 @@ export default function RegisterScreen() {
               onChangeText={(v) => { setUsername(v); setUsernameDirty(true); }}
               placeholder="juanperez08"
               autoCapitalize="none"
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor={colors.gray}
             />
           </View>
 
@@ -133,12 +172,14 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 10, backgroundColor: colors.primary },
+  container: { flex: 1, justifyContent: 'center', paddingHorizontal: 10, backgroundColor: colors.loginBackground },
+  bgContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', backgroundColor: colors.loginBackground },
+  bgImage: { position: 'absolute', width: '100%', height: height + 2 },
   title: { color: colors.white, fontSize: width < 400 ? 26 : 32, fontWeight: 'bold', textAlign: 'center', marginBottom: 16, textShadowColor: colors.shadowDark as any, textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 4 },
   form: { backgroundColor: 'transparent', width: '100%', maxWidth: 400, alignSelf: 'center' },
   inputContainer: { marginBottom: height < 700 ? 15 : 20 },
   inputLabel: { color: colors.white, fontWeight: '600', marginBottom: 6, fontSize: width < 400 ? 14 : 16 },
-  input: { backgroundColor: colors.white, borderRadius: width < 400 ? 20 : 25, paddingHorizontal: width < 400 ? 15 : 20, paddingVertical: width < 400 ? 12 : 15, color: colors.textPrimary, shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5, minHeight: width < 400 ? 45 : 50, fontSize: width < 400 ? 14 : 16 },
+  input: { backgroundColor: colors.white, borderRadius: width < 400 ? 20 : 25, paddingHorizontal: width < 400 ? 15 : 20, paddingVertical: width < 400 ? 12 : 15, color: colors.textMuted, shadowColor: colors.shadow as any, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2.5, elevation: 3, minHeight: width < 400 ? 45 : 50, fontSize: width < 400 ? 14 : 16 },
   sexRow: { flexDirection: 'row', gap: 8 },
   sexPill: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)' },
   sexPillActive: { backgroundColor: 'rgba(255,255,255,0.35)', shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 4 },

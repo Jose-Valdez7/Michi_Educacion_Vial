@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 
-const DEFAULT_BASE_URL = 'http://localhost:3002';
+const DEFAULT_BASE_URL = 'http://localhost:5499';
 
 export class ApiClient {
   private baseUrl: string;

@@ -13,6 +13,7 @@ export const colors = {
   textSecondary: '#6366F1',
   textWhite: '#FFFFFF',
   textAccent: '#8B5CF6',
+  textMuted: '#4B5563',
 
   buttonPrimary: '#6366F1',
   buttonSecondary: '#A78BFA',
@@ -40,4 +41,13 @@ export const colors = {
   gradientBackground: ['#FFFFFF', '#F8FAFC'] as const,
   gradientSuccess: ['#10B981', '#34D399'] as const,
   gradientWarning: ['#F59E0B', '#FBBF24'] as const,
+  
+  // Tema vial (para login)
+  asphalt: '#2E2E2E',
+  roadYellow: '#F5D142',
+  skyBlue: '#0B2B4C',
+  loginBackground: '#0B2B4C',
+  gradientLoginPrimary: ['#0B2B4C', '#145DA0'] as const,
+  gradientLoginSecondary: ['#F5D142', '#F7C948'] as const,
+  gradientLoginAccent: ['#2E2E2E', '#4B5563'] as const,
 };
