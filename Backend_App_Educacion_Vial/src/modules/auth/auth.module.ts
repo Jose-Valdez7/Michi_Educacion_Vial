@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthGuard } from './guards/auth.guard';
 import { RolesGuard } from './guards/roles.guard';
-import { PrismaModule } from '../database/prisma.module';
+import { PrismaModule } from '../common/database/prisma.module';
 
 @Module({
   imports: [

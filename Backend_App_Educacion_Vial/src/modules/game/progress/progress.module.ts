@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ProgressService } from './progress.service';
 import { ProgressController } from './progress.controller';
-import { PrismaModule } from '../../shared/database/prisma.module';
+import { PrismaModule } from '../../common/database/prisma.module';
 
 @Module({
   imports: [PrismaModule],

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsDateString, IsEnum, MinLength, MaxLength } from 'class-validator';
-import { RolesEnum, SexEnum } from '../../../shared/enums';
+import { RolesEnum, SexEnum } from '../../../common/enums';
 
 export class CreateRegisterDto {
   @ApiProperty({ example: 'Juan', description: 'Nombre del niño' })

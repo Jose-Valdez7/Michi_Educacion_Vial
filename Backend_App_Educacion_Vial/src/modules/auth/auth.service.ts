@@ -9,7 +9,7 @@ import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { LoginChildDto, RegisterChildDto } from './dto';
-import { PrismaService } from '../database/prisma.service';
+import { PrismaService } from '../common/database/prisma.service';
 import {
   ResourceAlreadyExistsException,
   UsernameNotFoundException,

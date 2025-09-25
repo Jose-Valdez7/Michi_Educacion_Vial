@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../shared/database/prisma.service';
+import { PrismaService } from '../../common/database/prisma.service';
 import { CreateRegisterDto } from './dto/create-register.dto';
 import * as bcrypt from 'bcryptjs';
 

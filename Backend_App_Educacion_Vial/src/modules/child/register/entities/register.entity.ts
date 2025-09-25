@@ -1,4 +1,4 @@
-import { RolesEnum, SexEnum } from '../../../shared/enums';
+import { RolesEnum, SexEnum } from '../../../common/enums';
 
 export class Register {
   id: string;
