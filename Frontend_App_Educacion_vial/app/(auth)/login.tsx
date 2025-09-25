@@ -16,6 +16,7 @@ export default function LoginScreen() {
   const [cedula, setCedula] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showHint, setShowHint] = useState(false);
 
   // Animaciones
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -124,16 +125,6 @@ export default function LoginScreen() {
             resizeMode="cover"
           />
          </View>
-         {/* Barra de estado superior */}
-         <View style={styles.statusBar}>
-           <Text style={styles.statusTime}>12:30</Text>
-           <View style={styles.statusIcons}>
-             <View style={styles.statusDot} />
-             <View style={[styles.statusDot, { width: 16 }]} />
-             <View style={[styles.statusDot, { width: 20 }]} />
-           </View>
-         </View>
-
          <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
            {/* Logo */}
            <Animated.View style={[styles.logoContainer, { transform: [{ scale: bounceAnim }] }]}>
@@ -180,7 +171,7 @@ export default function LoginScreen() {
                    </TouchableOpacity>
                  </View>
                  <View style={styles.underline} />
-                 <TouchableOpacity onPress={() => Alert.alert('Recuperación', 'Funcionalidad en construcción')} style={styles.forgotWrapper}>
+                 <TouchableOpacity onPress={() => setShowHint(true)} style={styles.forgotWrapper}>
                    <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
                  </TouchableOpacity>
                </View>
@@ -201,6 +192,19 @@ export default function LoginScreen() {
              </View>
            </View>
         </Animated.View>
+
+        {/* Modal de pista */}
+        {showHint && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.hintCard}>
+              <Text style={styles.hintTitle}>💡 Pista</Text>
+              <Text style={styles.hintContent}>Recuerda que tu contraseña es tu número de cédula</Text>
+              <TouchableOpacity onPress={() => setShowHint(false)} style={styles.hintButton}>
+                <Text style={styles.hintButtonText}>Entendido</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -211,17 +215,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10, backgroundColor: colors.loginBackground },
   bgContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', backgroundColor: colors.loginBackground },
   bgImage: { position: 'absolute', width: '100%', height: height + 2 },
-  content: { width: width * 0.95, maxWidth: 420, alignItems: 'center' },
-  statusBar: { position: 'absolute', top: 10, left: 16, right: 16, height: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  statusTime: { color: '#F3F4F6', fontSize: 12, fontWeight: '600' },
-  statusIcons: { flexDirection: 'row', gap: 6, alignItems: 'center' },
-  statusDot: { height: 10, width: 12, borderRadius: 3, backgroundColor: '#E5E7EB' },
+  content: { width: width * 0.9, maxWidth: 400, alignItems: 'center', marginHorizontal: 20 },
   logoContainer: { alignItems: 'center', justifyContent: 'center', marginBottom: height < 700 ? 5 : 8 },
   logoImage: { width: width < 400 ? 280 : 320, height: width < 400 ? 200 : 240 },
   header: { alignItems: 'center', marginBottom: height < 700 ? 8 : 12 },
   title: { fontSize: width < 400 ? 26 : 32, fontWeight: 'bold', color: colors.white, textAlign: 'center', marginBottom: 8, textShadowColor: colors.shadowDark as any, textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 4, lineHeight: width < 400 ? 32 : 38 },
   subtitle: { fontSize: width < 400 ? 16 : 18, color: colors.white, textAlign: 'center', fontWeight: '600' },
-  card: { width: '100%', maxWidth: 420, backgroundColor: 'rgba(128, 128, 128, 0.9)', borderRadius: 18, paddingVertical: 18, paddingHorizontal: 16, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8, marginTop: height * 0.1, marginBottom: height * 0.1 },
+  card: { width: '100%', maxWidth: 420, backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 18, paddingVertical: 18, paddingHorizontal: 16, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8, marginTop: height * 0.05, marginBottom: height * 0.15 },
   cardTitle: { textAlign: 'center', color: '#000000', fontSize: 22, fontWeight: '800', marginBottom: 8 },
   form: { width: '100%', marginTop: 6 },
   fieldBlock: { marginTop: 8, marginBottom: 10 },
@@ -231,10 +231,16 @@ const styles = StyleSheet.create({
   fieldInput: { flex: 1, fontSize: 16, color: '#111827', paddingVertical: 8 },
   underline: { height: 1, backgroundColor: '#E5E7EB' },
   forgotWrapper: { marginTop: 8, alignSelf: 'flex-end' },
-  forgotText: { color: '#FFFFFF', fontSize: 12, textDecorationLine: 'underline' },
+  forgotText: { color: '#000000', fontSize: 12, textDecorationLine: 'underline' },
   primaryButton: { marginTop: 14, backgroundColor: '#32CD32', borderRadius: 24, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, shadowColor: '#32CD32', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
   primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
   signupWrapper: { marginTop: 12, alignItems: 'center' },
-  signupText: { color: '#FFFFFF', fontSize: 12 },
+  signupText: { color: '#000000', fontSize: 12 },
   signupEmphasis: { textDecorationLine: 'underline', fontWeight: '700' },
+  modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
+  hintCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, marginHorizontal: 20, maxWidth: 300, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 10 },
+  hintTitle: { fontSize: 20, fontWeight: 'bold', color: '#000000', textAlign: 'center', marginBottom: 12 },
+  hintContent: { fontSize: 16, color: '#374151', textAlign: 'center', marginBottom: 20, lineHeight: 22 },
+  hintButton: { backgroundColor: '#FD935D', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24, alignItems: 'center' },
+  hintButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });
