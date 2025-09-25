@@ -9,8 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '../enums/role.enums';
-import { SexEnum } from '@prisma/client';
+import { RolesEnum, SexEnum } from '../../../modules/common/enums';
 
 export class RegisterChildDto {
   @ApiProperty({
@@ -70,11 +69,11 @@ export class RegisterChildDto {
 
   @ApiProperty({
     description: 'Rol del niño',
-    example: Role.CHILD,
+    example: RolesEnum.CHILD,
   })
-  @IsEnum(Role, {
-    message: 'El rol debe ser uno de los valores definidos en Role',
+  @IsEnum(RolesEnum, {
+    message: 'El rol debe ser uno de los valores definidos en RolesEnum',
   })
   @IsNotEmpty()
-  role: Role;
+  role: RolesEnum;
 }
