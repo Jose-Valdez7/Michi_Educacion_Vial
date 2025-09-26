@@ -67,15 +67,15 @@ export default function MinigamesLevel1() {
         </LinearGradient>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.card} onPress={() => router.push('/bicycle' as Href)}>
+      <TouchableOpacity style={styles.card} onPress={() => router.push('/bicycle-game' as Href)}>
         <LinearGradient colors={colors.gradientAccent} style={styles.cardGradient}>
           <Image 
             source={require('../../assets/images/bici.png')} 
             style={styles.cardImage} 
             resizeMode="contain"
           />
-          <Text style={styles.cardTitle}>Recorrer en Bicicleta</Text>
-          <Text style={styles.cardDesc}>Aventura con señales viales</Text>
+          <Text style={styles.cardTitle}>Aventura en Bicicleta</Text>
+          <Text style={styles.cardDesc}>Evita obstáculos y responde preguntas</Text>
         </LinearGradient>
       </TouchableOpacity>
 

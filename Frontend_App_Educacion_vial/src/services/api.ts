@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 const DEFAULT_BASE_URL = 'http://localhost:3002';
 
@@ -7,7 +8,10 @@ export class ApiClient {
 
   constructor(baseUrl?: string) {
     const extra = (Constants?.expoConfig?.extra ?? {}) as any;
-    this.baseUrl = baseUrl || extra.API_BASE_URL || DEFAULT_BASE_URL;
+    // In web, prefer localhost to avoid CORS from LAN IP; in native, use extra.API_BASE_URL if provided
+    const isWeb = Platform.OS === 'web';
+    const configured = extra.API_BASE_URL as string | undefined;
+    this.baseUrl = baseUrl || (isWeb ? DEFAULT_BASE_URL : configured || DEFAULT_BASE_URL);
   }
 
   async request<T>(path: string, options: RequestInit = {}): Promise<T> {
