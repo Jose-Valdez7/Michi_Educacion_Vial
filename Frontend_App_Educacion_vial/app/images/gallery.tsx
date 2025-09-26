@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Dimensions, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Dimensions, Image, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { colors } from '@/utils/colors';
@@ -20,6 +20,7 @@ export default function ImagesGallery() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ColoredImage[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [previewModal, setPreviewModal] = useState<{ visible: boolean; item: ColoredImage | null }>({ visible: false, item: null });
 
   const load = useCallback(async () => {
     try {
@@ -68,6 +69,14 @@ export default function ImagesGallery() {
     ]);
   };
 
+  const showPreview = (item: ColoredImage) => {
+    setPreviewModal({ visible: true, item });
+  };
+
+  const hidePreview = () => {
+    setPreviewModal({ visible: false, item: null });
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -89,7 +98,7 @@ export default function ImagesGallery() {
         columnWrapperStyle={{ gap: 10 }}
         contentContainerStyle={{ paddingBottom: 20 }}
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <TouchableOpacity style={styles.card} onPress={() => showPreview(item)}>
             <LinearGradient colors={colors.gradientBackground} style={styles.cardInner}>
               <Text numberOfLines={2} style={styles.cardTitle}>{item.data?.title || 'Dibujo'}</Text>
               <Text style={styles.cardDate}>{new Date(item.dateCreated).toLocaleDateString()}</Text>
@@ -146,7 +155,7 @@ export default function ImagesGallery() {
                 </TouchableOpacity>
               </View>
             </LinearGradient>
-          </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -159,11 +168,79 @@ export default function ImagesGallery() {
           </View>
         }
       />
+      
+      {/* Modal de vista previa */}
+      <Modal
+        visible={previewModal.visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={hidePreview}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {previewModal.item?.data?.title || 'Vista previa'}
+              </Text>
+              <TouchableOpacity style={styles.closeButton} onPress={hidePreview}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {previewModal.item && (
+              <View style={styles.previewContainer}>
+                <View style={styles.previewImageContainer}>
+                  {previewModal.item.data?.baseImage && TASK_IMAGES[previewModal.item.data.baseImage] && (
+                    <Image
+                      source={TASK_IMAGES[previewModal.item.data.baseImage]}
+                      style={styles.previewBaseImage}
+                      resizeMode="contain"
+                    />
+                  )}
+
+                  {(() => {
+                    const mimeType = previewModal.item.data?.imageMimeType;
+                    const dataUrl = previewModal.item.data?.imageDataUrl;
+                    const isSvg = mimeType === 'image/svg+xml' || dataUrl?.startsWith('data:image/svg+xml');
+
+                    if (isSvg && dataUrl) {
+                      return (
+                        <SvgUri
+                          width="100%"
+                          height="100%"
+                          uri={dataUrl}
+                          style={styles.previewCapturedImage}
+                        />
+                      );
+                    }
+
+                    if (dataUrl) {
+                      return (
+                        <Image
+                          source={{ uri: dataUrl }}
+                          style={styles.previewCapturedImage}
+                          resizeMode="contain"
+                        />
+                      );
+                    }
+
+                    if (!previewModal.item.data?.baseImage || !TASK_IMAGES[previewModal.item.data.baseImage]) {
+                      return <Text style={styles.noImageText}>Sin imagen</Text>;
+                    }
+
+                    return null;
+                  })()}
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-const CARD_SIZE = (width - 20 - 10) / 2; // padding 20, gap 10
+const CARD_SIZE = (width - 80 - 10) / 2; // padding 40*2, gap 10
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 40, backgroundColor: colors.primary },
@@ -188,4 +265,68 @@ const styles = StyleSheet.create({
   cta: { borderRadius: 16, overflow: 'hidden' },
   ctaGradient: { paddingVertical: 10, paddingHorizontal: 14 },
   ctaText: { color: colors.white, fontWeight: 'bold' },
+  // Estilos del modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '90%',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  closeButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    fontWeight: 'bold',
+  },
+  previewContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  previewImageContainer: {
+    width: '100%',
+    height: 300,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    position: 'relative',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  previewBaseImage: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.3,
+  },
+  previewCapturedImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
 });
