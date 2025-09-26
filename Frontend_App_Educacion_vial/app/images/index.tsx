@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter, type Href, useFocusEffect } from 'expo-router';
 import { colors } from '@/utils/colors';
 import { ProgressApi } from '@/services/progress';
 import { maybeAwardColoringSetStar } from '@/services/progress2';
@@ -56,6 +56,12 @@ export default function ImagesMenu() {
   useEffect(() => {
     loadCompleted();
   }, [loadCompleted]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadCompleted();
+    }, [loadCompleted])
+  );
 
   return (
     <LinearGradient colors={colors.gradientPrimary} style={styles.container}>

@@ -52,7 +52,7 @@ export default function ImagesDraw() {
 
       images.forEach((image) => {
         const baseImage = image.data?.baseImage as TaskId | undefined;
-        if (baseImage && initial.hasOwnProperty(baseImage)) {
+        if (baseImage && Object.prototype.hasOwnProperty.call(initial, baseImage)) {
           initial[baseImage] = true;
         }
       });
@@ -64,7 +64,7 @@ export default function ImagesDraw() {
         initial.patrol = list.includes('1_coloring_patrol');
         initial.semaforo = list.includes('1_coloring_semaforo');
       } catch (_progressError) {
-        // Ignorar errores de carga
+        // Ignorar
       }
     }
 

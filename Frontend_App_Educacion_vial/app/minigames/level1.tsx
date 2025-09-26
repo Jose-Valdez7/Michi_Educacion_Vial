@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/utils/colors';
 import { useRouter, type Href } from 'expo-router';
 import { ProgressApi } from '@/services/progress';
+import { ImagesApi } from '@/services/images';
 
 const { width } = Dimensions.get('window');
 
@@ -15,22 +16,30 @@ export default function MinigamesLevel1() {
     bicycle: false
   });
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const p = await ProgressApi.get();
-        const list: string[] = Array.isArray(p.completedGames) ? p.completedGames : [];
+  const loadProgress = useCallback(async () => {
+    try {
+      const [progress, images] = await Promise.all([ProgressApi.get(), ImagesApi.list()]);
+      const list: string[] = Array.isArray(progress.completedGames) ? progress.completedGames : [];
 
-        setCompletedActivities({
-          coloring: list.includes('1_coloring') || list.includes('1_6'),
-          quiz: list.includes('1_quiz_vial') || list.includes('1_1'),
-          bicycle: list.includes('1_bicycle') || list.includes('1_2')
-        });
-      } catch (e) {
-        // Error loading completed activities
-      }
-    })();
+      const hasCat = images.some((image) => image.data?.baseImage === 'cat');
+      const hasPatrol = images.some((image) => image.data?.baseImage === 'patrol');
+      const hasSemaforo = images.some((image) => image.data?.baseImage === 'semaforo');
+
+      const coloringCompleted = (hasCat && hasPatrol && hasSemaforo) || list.includes('1_coloring') || list.includes('1_6');
+
+      setCompletedActivities({
+        coloring: coloringCompleted,
+        quiz: list.includes('1_quiz_vial') || list.includes('1_1'),
+        bicycle: list.includes('1_bicycle') || list.includes('1_2')
+      });
+    } catch (e) {
+      // Error loading completed activities
+    }
   }, []);
+
+  useEffect(() => {
+    loadProgress();
+  }, [loadProgress]);
 
   return (
     <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
