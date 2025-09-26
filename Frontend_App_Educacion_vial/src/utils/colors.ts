@@ -29,6 +29,7 @@ export const colors = {
   shadow: 'rgba(99, 102, 241, 0.1)',
   shadowDark: 'rgba(99, 102, 241, 0.3)',
   gradientPrimary: ['#6366F1', '#A78BFA'] as const,
+  gradientPrimaryLight: ['#F25233', '#ED664C'] as const,
   gradientSecondary: ['#A78BFA', '#C4B5FD'] as const,
   gradientAccent: ['#8B5CF6', '#A78BFA'] as const,
   gradientBackground: ['#FFFFFF', '#F8FAFC'] as const,

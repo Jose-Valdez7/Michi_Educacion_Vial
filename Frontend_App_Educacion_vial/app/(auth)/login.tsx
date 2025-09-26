@@ -124,15 +124,7 @@ export default function LoginScreen() {
             resizeMode="cover"
           />
          </View>
-         {/* Barra de estado superior */}
-         <View style={styles.statusBar}>
-           <Text style={styles.statusTime}>12:30</Text>
-           <View style={styles.statusIcons}>
-             <View style={styles.statusDot} />
-             <View style={[styles.statusDot, { width: 16 }]} />
-             <View style={[styles.statusDot, { width: 20 }]} />
-           </View>
-         </View>
+         {/* Barra de estado superior eliminada */}
 
          <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
            {/* Logo */}
@@ -149,13 +141,13 @@ export default function LoginScreen() {
                <View style={styles.fieldBlock}>
                  <Text style={styles.fieldLabel}>Username</Text>
                  <View style={styles.fieldRow}>
-                   <Ionicons name="person-outline" size={20} color="#000000" style={styles.fieldIcon} />
+                  <Ionicons name="person-outline" size={20} color="#FFFFFF" style={styles.fieldIcon} />
                    <TextInput
                      style={styles.fieldInput}
                      value={userName}
                      onChangeText={setUserName}
                      placeholder="example16"
-                     placeholderTextColor="#9CA3AF"
+                     placeholderTextColor="#ffffffcc"
                      autoCapitalize="none"
                    />
                  </View>
@@ -166,17 +158,18 @@ export default function LoginScreen() {
                <View style={styles.fieldBlock}>
                  <Text style={styles.fieldLabel}>Password</Text>
                  <View style={styles.fieldRow}>
-                   <Ionicons name="lock-closed-outline" size={20} color="#000000" style={styles.fieldIcon} />
+                  <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" style={styles.fieldIcon} />
                    <TextInput
                      style={styles.fieldInput}
                      value={cedula}
                      onChangeText={setCedula}
                      placeholder="••••••••"
-                     placeholderTextColor="#9CA3AF"
+                     placeholderTextColor="#ffffffcc"
                      secureTextEntry={!showPassword}
+                     keyboardType="number-pad"
                    />
                    <TouchableOpacity onPress={() => setShowPassword((v) => !v)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                     <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#9CA3AF" />
+                     <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#FFFFFF" />
                    </TouchableOpacity>
                  </View>
                  <View style={styles.underline} />
@@ -221,14 +214,14 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', marginBottom: height < 700 ? 8 : 12 },
   title: { fontSize: width < 400 ? 26 : 32, fontWeight: 'bold', color: colors.white, textAlign: 'center', marginBottom: 8, textShadowColor: colors.shadowDark as any, textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 4, lineHeight: width < 400 ? 32 : 38 },
   subtitle: { fontSize: width < 400 ? 16 : 18, color: colors.white, textAlign: 'center', fontWeight: '600' },
-  card: { width: '100%', maxWidth: 420, backgroundColor: 'rgba(128, 128, 128, 0.9)', borderRadius: 18, paddingVertical: 18, paddingHorizontal: 16, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8, marginTop: height * 0.1, marginBottom: height * 0.1 },
-  cardTitle: { textAlign: 'center', color: '#000000', fontSize: 22, fontWeight: '800', marginBottom: 8 },
+  card: { alignSelf: 'stretch', maxWidth: 420, backgroundColor: 'rgba(128, 128, 128, 0.9)', borderRadius: 18, paddingVertical: 20, paddingHorizontal: 26, marginHorizontal: 12, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8, marginTop: height * 0.02, marginBottom: height * 0.1 },
+  cardTitle: { textAlign: 'center', color: '#FFFFFF', fontSize: 22, fontWeight: '800', marginBottom: 8 },
   form: { width: '100%', marginTop: 6 },
   fieldBlock: { marginTop: 8, marginBottom: 10 },
-  fieldLabel: { color: '#000000', fontSize: 14, marginBottom: 6, fontWeight: '600' },
+  fieldLabel: { color: '#FFFFFF', fontSize: 14, marginBottom: 6, fontWeight: '600' },
   fieldRow: { flexDirection: 'row', alignItems: 'center' },
   fieldIcon: { marginRight: 8 },
-  fieldInput: { flex: 1, fontSize: 16, color: '#111827', paddingVertical: 8 },
+  fieldInput: { flex: 1, fontSize: 16, color: '#FFFFFF', paddingVertical: 8 },
   underline: { height: 1, backgroundColor: '#E5E7EB' },
   forgotWrapper: { marginTop: 8, alignSelf: 'flex-end' },
   forgotText: { color: '#FFFFFF', fontSize: 12, textDecorationLine: 'underline' },
