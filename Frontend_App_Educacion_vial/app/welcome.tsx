@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Image, Modal } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, Image, Modal, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/utils/colors';
 import { ProgressApi } from '@/services/progress';
@@ -9,6 +9,28 @@ import { useRouter, type Href } from 'expo-router';
 const { width, height } = Dimensions.get('window');
 
 export default function Welcome() {
+  const bgBase = useRef(new Animated.Value(0)).current;
+  const bgProgress = Animated.modulo(bgBase, 1);
+  const buttonScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const duration = 15000;
+    bgBase.setValue(0);
+    const loop = Animated.loop(
+      Animated.timing(bgBase, {
+        toValue: 1,
+        duration,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+      { resetBeforeIteration: true }
+    );
+    loop.start();
+    return () => {
+      bgBase.stopAnimation();
+      loop.stop();
+    };
+  }, [bgBase]);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<any | null>(null);
@@ -83,13 +105,36 @@ export default function Welcome() {
 
   return (
     <>
-      <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
+      <View style={styles.container}>
+        <View style={styles.bgContainer} pointerEvents="none">
+          <Animated.Image
+            source={require('../assets/images/background-welcome.png')}
+            style={[styles.bgImage, { transform: [{ translateX: Animated.add(Animated.multiply(bgProgress, width), -width) }] }]}
+            resizeMode="cover"
+          />
+          <Animated.Image
+            source={require('../assets/images/background-welcome.png')}
+            style={[styles.bgImage, { transform: [{ translateX: Animated.multiply(bgProgress, width) }] }]}
+            resizeMode="cover"
+          />
+          <Animated.Image
+            source={require('../assets/images/background-welcome.png')}
+            style={[styles.bgImage, { transform: [{ translateX: Animated.add(Animated.multiply(bgProgress, width), width) }] }]}
+            resizeMode="cover"
+          />
+        </View>
         {/* Header con botón de ajustes */}
         <View style={styles.header}>
           <View style={styles.topRow}>
             <View style={styles.welcomeRow}>
-              <Text style={styles.welcomeText}>¡Bienvenido, {userName}!</Text>
-              <Image source={require('../assets/images/gatoLogo.png')} style={styles.welcomeCatImage} resizeMode="contain" />
+              <View style={styles.welcomeCard}>
+                <Image source={require('../assets/images/gatoLogo.png')} style={styles.welcomeCatImage} resizeMode="contain" />
+                <Text style={styles.welcomeText}>¡Bienvenido, {userName}!</Text>
+              </View>
+            </View>
+            <View style={[styles.statPill, { marginRight: 8 }]}>
+              <Text style={styles.statIcon}>🪙</Text>
+              <Text style={styles.statText}>{progress.coins ?? 0}</Text>
             </View>
             <TouchableOpacity
               style={styles.settingsButton}
@@ -97,13 +142,6 @@ export default function Welcome() {
             >
               <Text style={styles.settingsIcon}>⚙️</Text>
             </TouchableOpacity>
-          </View>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statPill}>
-              <Text style={styles.statIcon}>🪙</Text>
-              <Text style={styles.statText}>{progress.coins ?? 0}</Text>
-            </View>
           </View>
           <View style={styles.licenseBox}>
             <View style={styles.licenseHeader}>
@@ -127,29 +165,9 @@ export default function Welcome() {
 
             return (
               <View key={lvl} style={[styles.islandCard, isLocked && styles.lockedIslandCard]}>
-                <LinearGradient colors={isLocked ? ['#666666', '#888888'] : colors.gradientSecondary} style={styles.islandGradient}>
+                <LinearGradient colors={['#FFD700', '#FFA500']} style={styles.islandGradient}>
                   <View style={styles.islandHeaderArea}>
-                    <Image
-                      source={require('../assets/images/isla12.png')}
-                      style={[styles.islandImage, isLocked && styles.lockedIslandImage]}
-                      resizeMode="contain"
-                    />
-                    <Text style={[styles.islandTitle, isLocked && styles.lockedIslandTitle]}>Nivel {lvl}</Text>
-
-                    {isLocked && (
-                      <View style={styles.lockOverlay}>
-                        <Text style={styles.lockIcon}>🔒</Text>
-                        <Text style={styles.lockMessage}>Nivel Bloqueado</Text>
-                        <Text style={styles.lockRequirement}>
-                          {lvl === 2 ? (shouldUnlockLevel2 ? '¡Desbloqueado!' : 'Completa las 3 estrellas del Nivel 1') :
-                           lvl === 3 ? 'Completa el Nivel 2' :
-                           lvl === 4 ? 'Completa el Nivel 3' :
-                           'Completa el Nivel 4'}
-                        </Text>
-                      </View>
-                    )}
-
-                    <View style={styles.starsBackground}>
+                  <View style={styles.starsBackground}>
                       <View style={styles.starsContainer}>
                         {[1,2,3].map((n) => (
                           <Text key={n} style={styles.starText}>
@@ -158,26 +176,67 @@ export default function Welcome() {
                         ))}
                       </View>
                     </View>
+                    <Image
+                      source={require('../assets/images/isla12.png')}
+                      style={[styles.islandImage, isLocked && styles.lockedIslandImage]}
+                      resizeMode="contain"
+                    />
+                    <Image
+                      source={require('../assets/images/nivel-1.png')}
+                      style={styles.titleImage}
+                      resizeMode="contain"
+                    />
+
                   </View>
 
-                  <TouchableOpacity
-                    style={[styles.islandButton, isLocked && styles.lockedIslandButton]}
-                    onPress={() => {
-                      if (isUnlocked || shouldUnlockLevel2) {
-                        router.push('/minigames/level1' as Href);
-                      }
-                    }}
-                    disabled={isLocked && !shouldUnlockLevel2}
-                  >
-                    <LinearGradient
-                      colors={isLocked && !shouldUnlockLevel2 ? ['#999999', '#bbbbbb'] : (lvl === 1 ? colors.gradientPrimary : colors.gradientSecondary)}
-                      style={styles.islandButtonGradient}
-                    >
-                      <Text style={[styles.islandButtonText, isLocked && styles.lockedIslandButtonText]}>
-                        {isLocked && !shouldUnlockLevel2 ? '🔒 Bloqueado' : '🎮 Jugar'}
+                  <View style={styles.islandButtonContainer}>
+                    <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                      <TouchableOpacity
+                        style={[styles.islandButton, isLocked && styles.lockedIslandButton]}
+                        onPress={() => {
+                          if (isUnlocked || shouldUnlockLevel2) {
+                            Animated.sequence([
+                              Animated.timing(buttonScale, {
+                                toValue: 0.9,
+                                duration: 100,
+                                useNativeDriver: true,
+                              }),
+                              Animated.timing(buttonScale, {
+                                toValue: 1,
+                                duration: 100,
+                                useNativeDriver: true,
+                              }),
+                            ]).start();
+                            
+                            setTimeout(() => {
+                              router.push('/minigames/level1' as Href);
+                            }, 150);
+                          }
+                        }}
+                        disabled={isLocked && !shouldUnlockLevel2}
+                        activeOpacity={0.85}
+                      >
+                        <Image
+                          source={require('../assets/images/boton-jugar.png')}
+                          style={[styles.playImage, isLocked && { opacity: 0.6 }]}
+                          resizeMode="contain"
+                        />
+                      </TouchableOpacity>
+                    </Animated.View>
+                  </View>
+
+                  {isLocked && (
+                    <View style={styles.lockOverlay}>
+                      <Text style={styles.lockIcon}>🔒</Text>
+                      <Text style={styles.lockMessage}>Nivel Bloqueado</Text>
+                      <Text style={styles.lockRequirement}>
+                        {lvl === 2 ? (shouldUnlockLevel2 ? '¡Desbloqueado!' : 'Completa las 3 estrellas del Nivel 1') :
+                         lvl === 3 ? 'Completa el Nivel 2' :
+                         lvl === 4 ? 'Completa el Nivel 3' :
+                         'Completa el Nivel 4'}
                       </Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
+                    </View>
+                  )}
                 </LinearGradient>
               </View>
             );
@@ -185,18 +244,22 @@ export default function Welcome() {
         </ScrollView>
 
         <View style={styles.footerButtons}>
-          <TouchableOpacity style={styles.footerBtn} onPress={() => router.push('/album' as Href)}>
-            <LinearGradient colors={colors.gradientSecondary} style={styles.footerBtnGradient}>
-              <Text style={styles.footerBtnText}>📚 Álbum</Text>
-            </LinearGradient>
+          <TouchableOpacity style={[styles.footerBtn, { marginTop: 8 }]} onPress={() => router.push('/album' as Href)} activeOpacity={0.85}>
+            <Image
+              source={require('../assets/images/boton-album.png')}
+              style={styles.albumImage}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.footerBtn} onPress={() => router.push('/achievements' as Href)}>
-            <LinearGradient colors={colors.gradientSuccess} style={styles.footerBtnGradient}>
-              <Text style={styles.footerBtnText}>🏆 Logros</Text>
-            </LinearGradient>
+          <TouchableOpacity style={styles.footerBtn} onPress={() => router.push('/achievements' as Href)} activeOpacity={0.85}>
+            <Image
+              source={require('../assets/images/boton-logros.png')}
+              style={styles.achievementsImage}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Modal de Ajustes */}
       <Modal
@@ -237,49 +300,53 @@ export default function Welcome() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  container: { flex: 1, paddingHorizontal: 20, paddingTop: 48, paddingBottom: 16 },
+  container: { flex: 1, paddingHorizontal: 1, paddingTop: 55, paddingBottom: 30 },
+  bgContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  bgImage: { position: 'absolute', width: width, height: '100%', opacity: 0.6 },
   header: { marginBottom: 20 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  welcomeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 },
-  welcomeText: { fontSize: width < 400 ? 22 : 28, fontWeight: 'bold', color: colors.white, marginRight: 8, textShadowColor: colors.shadowDark as any, textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 4 },
+  welcomeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', paddingHorizontal: 4 },
+  welcomeText: { fontSize: width < 400 ? 22 : 28, fontWeight: 'bold', color: '#000000', marginRight: 8 },
   welcomeCatImage: { width: width < 400 ? 35 : 40, height: width < 400 ? 35 : 40 },
-  settingsButton: { backgroundColor: 'rgba(255, 255, 255, 0.2)', padding: 10, borderRadius: 20, minWidth: 40, alignItems: 'center', justifyContent: 'center' },
+  settingsButton: { backgroundColor: 'rgba(255, 255, 255, 0.2)', padding: 10, borderRadius: 20, minWidth: 40, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
   settingsIcon: { color: '#FFFFFF', fontSize: 20, fontWeight: 'bold' },
   statsRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 },
-  statPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  statPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 215, 0, 0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   statIcon: { fontSize: 18, marginRight: 6 },
-  statText: { fontSize: 16, fontWeight: 'bold', color: colors.white },
-  licenseBox: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: 16, marginTop: 16, width: '85%', alignSelf: 'center' },
+  statText: { fontSize: 16, fontWeight: 'bold', color: '#000000' },
+  licenseBox: { marginBottom: 10, backgroundColor: 'rgba(255, 215, 0, 0.3)', borderRadius: 12, padding: 16, marginTop: 20, width: '96%', marginHorizontal: 8 },
   licenseHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  licenseTitle: { fontSize: 18, fontWeight: 'bold', color: colors.white },
-  licenseSubtitle: { fontSize: 16, color: colors.white, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  licenseTitle: { fontSize: 18, fontWeight: 'bold', color: '#000000' },
+  licenseSubtitle: { fontSize: 16, color: '#000000', backgroundColor: 'rgba(255,255,255,0.4)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
   progressBarBg: { width: '100%', height: 12, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 6, overflow: 'hidden' },
   progressBarFill: { height: '100%', backgroundColor: colors.accent },
   islandsContainer: { paddingHorizontal: 10 },
-  islandCard: { width: width * 0.8, height: height * 0.5, marginRight: 16, borderRadius: 30, overflow: 'hidden', shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 10 },
-  islandGradient: { flex: 1, padding: 20 },
-  islandHeaderArea: { alignItems: 'center', flex: 1, justifyContent: 'center' },
-  islandImage: { width: width * 0.55, height: width * 0.55, marginBottom: 15 },
-  islandTitle: { fontSize: width < 400 ? 28 : 32, fontWeight: 'bold', color: colors.white, textAlign: 'center', textShadowColor: colors.shadowDark as any, textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 4, marginBottom: 10 },
-  starsBackground: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 8 },
+  islandCard: { width: width * 0.8, height: height * 0.56, marginRight: 16, borderRadius: 30, overflow: 'hidden', shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 10, borderWidth: 3, borderColor: '#000000' },
+  islandGradient: { flex: 1, padding: 20, borderRadius: 10, position: 'relative' },
+  islandHeaderArea: { alignItems: 'center', flex: 1, justifyContent: 'flex-start', zIndex: 1 },
+  islandImage: { width: width * 0.55, height: width * 0.55, marginBottom:1, marginTop : 0.25,  },
+  titleImage: { width: width * 0.4, height: 60, alignSelf: 'center', marginBottom: 5 },
+  starsBackground: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 7 },
   starsContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   starText: { fontSize: 20, marginHorizontal: 3 },
-  islandButton: { borderRadius: 16, marginTop: 10 },
-  islandButtonGradient: { paddingVertical: 14, borderRadius: 16, alignItems: 'center' },
-  islandButtonText: { fontSize: 18, fontWeight: 'bold', color: colors.white },
+  islandButtonContainer: { zIndex: 1, marginTop: 20 },
+  islandButton: { borderRadius: 16 },
+  playImage: { width: width * 0.5, height:100, alignSelf: 'center' },
   lockedIslandCard: { opacity: 0.7 },
   lockedIslandImage: { opacity: 0.6 },
   lockedIslandTitle: { color: '#cccccc' },
-  lockOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', justifyContent: 'center', alignItems: 'center', borderRadius: 30 },
-  lockIcon: { fontSize: 40, color: '#fff', marginBottom: 10 },
-  lockMessage: { fontSize: 16, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 5 },
-  lockRequirement: { fontSize: 14, color: '#ddd', textAlign: 'center', paddingHorizontal: 10 },
+  lockOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.8)', justifyContent: 'center', alignItems: 'center', borderRadius: 25, zIndex: 10, padding: 30 },
+  lockIcon: { fontSize: 60, color: '#fff', marginBottom: 20 },
+  lockMessage: { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 15 },
+  lockRequirement: { fontSize: 18, color: '#ddd', textAlign: 'center', paddingHorizontal: 20, lineHeight: 24 },
   lockedIslandButton: { opacity: 0.6 },
   lockedIslandButtonText: { color: '#999999' },
-  footerButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
-  footerBtn: { flex: 1, marginHorizontal: 4, borderRadius: 16, overflow: 'hidden' },
+  footerButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingHorizontal: 8 },
+  footerBtn: { flex: 1, marginHorizontal: 6, borderRadius: 16, overflow: 'hidden' },
   footerBtnGradient: { paddingVertical: 12, alignItems: 'center' },
   footerBtnText: { color: colors.white, fontWeight: 'bold' },
+  albumImage: { width: '100%', height: 120 },
+  achievementsImage: { width: '100%', height: 120 },
   // Modal styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { backgroundColor: 'white', borderRadius: 20, padding: 20, width: '80%', maxWidth: 400 },
@@ -291,6 +358,7 @@ const styles = StyleSheet.create({
   modalLogoutText: { color: '#FFFFFF' },
   modalCancelOption: { backgroundColor: '#f0f0f0' },
   modalCancelText: { fontSize: 18, color: '#666', fontWeight: '500' },
+  welcomeCard: { backgroundColor: 'rgba(255, 215, 0, 0.3)', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, marginLeft: 0, flexDirection: 'row', alignItems: 'center', shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 6 },
 });
 
 function completedStars(completedGames: string[] = [], level: number): number {
