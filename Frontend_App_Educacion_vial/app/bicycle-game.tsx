@@ -11,6 +11,7 @@ import {
   PanResponder,
   GestureResponderEvent,
   PanResponderGestureState,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
@@ -654,7 +655,27 @@ export default function BicycleGameScreen() {
             },
           ]}
         >
-          <Text style={styles.playerEmoji}>🚴‍♂️</Text>
+          {/* Opción 2A: Imagen personalizada (descomenta si tienes la imagen) */}
+          <Image 
+            source={require('../assets/images/bici.png')} 
+            style={styles.playerImage} 
+            resizeMode="contain" 
+          />
+          
+          {/* Opción 3: Icono geométrico personalizado */}
+          {/* <View style={styles.bicycleIcon}>
+            <View style={styles.wheel} />
+            <View style={styles.wheel2} />
+            <View style={styles.frame} />
+          </View> */}
+          
+          {/* Opción 1: Diferentes emojis (elige uno) */}
+          {/* <Text style={styles.playerEmoji}>🚲</Text> - Bicicleta simple */}
+          {/* <Text style={styles.playerEmoji}>🚴‍♂️</Text> - Ciclista hombre */}
+          {/* <Text style={styles.playerEmoji}>🚴‍♀️</Text> - Ciclista mujer */}
+          {/* <Text style={styles.playerEmoji}>🚴</Text> - Ciclista genérico */}
+          {/* <Text style={styles.playerEmoji}>🛴</Text> - Scooter */}
+          {/* <Text style={styles.playerEmoji}>🏍️</Text> - Motocicleta */}
         </Animated.View>
 
         {/* Obstacles */}
@@ -929,6 +950,47 @@ const styles = StyleSheet.create({
   },
   playerEmoji: {
     fontSize: PLAYER_SIZE * 0.8,
+  },
+  playerImage: {
+    width: PLAYER_SIZE * 1.5,  // 50% más grande
+    height: PLAYER_SIZE * 1.5, // 50% más grande
+  },
+  // Estilos para icono geométrico de bicicleta
+  bicycleIcon: {
+    width: PLAYER_SIZE,
+    height: PLAYER_SIZE,
+    position: 'relative',
+  },
+  wheel: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#333',
+    backgroundColor: 'transparent',
+    left: 4,
+    top: 20,
+  },
+  wheel2: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#333',
+    backgroundColor: 'transparent',
+    right: 4,
+    top: 20,
+  },
+  frame: {
+    position: 'absolute',
+    width: 20,
+    height: 2,
+    backgroundColor: '#333',
+    left: 14,
+    top: 28,
+    transform: [{ rotate: '15deg' }],
   },
 
   // Obstacle Styles

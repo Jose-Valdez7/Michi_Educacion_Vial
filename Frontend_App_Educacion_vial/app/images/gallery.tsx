@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { colors } from '@/utils/colors';
 import { ImagesApi, type ColoredImage } from '@/services/images';
+import { SvgUri } from 'react-native-svg';
 
 // Mapeo de las imágenes base para mostrar en la galería
 const TASK_IMAGES: Record<string, any> = {
@@ -96,24 +97,46 @@ export default function ImagesGallery() {
               {/* Display the captured image */}
               <View style={styles.drawingPreview}>
                 <View style={styles.drawingContainer}>
-                  {item.data?.imageUrl ? (
+                  {item.data?.baseImage && TASK_IMAGES[item.data.baseImage] && (
                     <Image
-                      source={{ uri: `http://localhost:3002${item.data.imageUrl}` }}
-                      style={styles.capturedImage}
+                      source={TASK_IMAGES[item.data.baseImage]}
+                      style={styles.baseImagePreview}
                       resizeMode="contain"
                     />
-                  ) : (
-                    /* Fallback: Show base image if captured image is not available */
-                    item.data?.baseImage && TASK_IMAGES[item.data.baseImage] ? (
-                      <Image
-                        source={TASK_IMAGES[item.data.baseImage]}
-                        style={styles.baseImagePreview}
-                        resizeMode="contain"
-                      />
-                    ) : (
-                      <Text style={styles.noImageText}>Sin imagen</Text>
-                    )
                   )}
+
+                  {(() => {
+                    const mimeType = item.data?.imageMimeType;
+                    const dataUrl = item.data?.imageDataUrl;
+                    const isSvg = mimeType === 'image/svg+xml' || dataUrl?.startsWith('data:image/svg+xml');
+
+                    if (isSvg && dataUrl) {
+                      return (
+                        <SvgUri
+                          width="100%"
+                          height="100%"
+                          uri={dataUrl}
+                          style={styles.capturedImage}
+                        />
+                      );
+                    }
+
+                    if (dataUrl) {
+                      return (
+                        <Image
+                          source={{ uri: dataUrl }}
+                          style={styles.capturedImage}
+                          resizeMode="contain"
+                        />
+                      );
+                    }
+
+                    if (!item.data?.baseImage || !TASK_IMAGES[item.data.baseImage]) {
+                      return <Text style={styles.noImageText}>Sin imagen</Text>;
+                    }
+
+                    return null;
+                  })()}
                 </View>
               </View>
 
@@ -151,9 +174,9 @@ const styles = StyleSheet.create({
   cardTitle: { color: colors.textPrimary, fontWeight: '700' },
   cardDate: { color: colors.gray, fontSize: 12 },
   drawingPreview: { flex: 1, marginVertical: 8 },
-  drawingContainer: { width: '100%', height: 80, backgroundColor: 'white', borderRadius: 8, position: 'relative', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
-  capturedImage: { width: '100%', height: '100%' },
-  baseImagePreview: { width: '80%', height: '80%', position: 'absolute', opacity: 0.4 },
+  drawingContainer: { width: '100%', height: 80, backgroundColor: 'white', borderRadius: 8, position: 'relative', overflow: 'hidden' },
+  capturedImage: { ...StyleSheet.absoluteFillObject },
+  baseImagePreview: { ...StyleSheet.absoluteFillObject, opacity: 0.35 },
   noImageText: { color: colors.gray, fontSize: 12 },
   pathContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   pathPoint: { position: 'absolute', borderRadius: 50 },

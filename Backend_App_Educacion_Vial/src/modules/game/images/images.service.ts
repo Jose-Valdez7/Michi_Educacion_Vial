@@ -2,12 +2,26 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 
 export type CreateImageDto = {
-  // Datos del dibujo enviados directamente por el frontend
+  // Campos requeridos
   title: string;
   taskId: string;
   paths: Array<{ color: string; size: number; points: Array<{ x: number; y: number }> }>;
   colors: string[];
-  baseImage: string;
+
+  // Campos adicionales del frontend
+  description?: string;
+  category?: string;
+  type?: string;
+  level?: string;
+  status?: string;
+  baseImage?: string;
+  metadata?: any;
+
+  // Información de la imagen procesada en backend
+  imageDataUrl?: string;
+  imageSvgMarkup?: string;
+  imageMimeType?: string;
+  imageFileName?: string;
 };
 
 @Injectable()
@@ -30,7 +44,13 @@ export class ImagesService {
     const result = await this.prisma.coloredImage.create({
       data: {
         childId,
-        data: dto, // ✅ Guardar todo el objeto dto como JSON
+        data: {
+          ...dto,
+          imageMimeType: dto.imageMimeType,
+          imageFileName: dto.imageFileName,
+          imageSvgMarkup: dto.imageSvgMarkup,
+          imageDataUrl: dto.imageDataUrl,
+        },
       },
     });
 
