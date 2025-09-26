@@ -1,9 +1,9 @@
 require('dotenv').config();
 
 module.exports = {
-  port: process.env.PORT || 3001,
+  port: process.env.PORT || 3002,
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://192.168.68.110:3000',
+    origin: process.env.CORS_ORIGIN || 'http://192.168.68.120:3002',
     methods: ['GET', 'POST']
   },
   game: {
