@@ -16,6 +16,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { ProgressApi } from '@/services/progress';
+import { BicycleProgressService } from '@/services/bicycleProgress';
 import { colors } from '@/utils/colors';
 
 type Option = {
@@ -587,6 +588,8 @@ export default function BicycleGameScreen() {
               style={styles.startButton}
               onPress={async () => {
                 try {
+                  await BicycleProgressService.markCompleted();
+
                   const p = await ProgressApi.get();
                   const set = new Set<string>(Array.isArray(p.completedGames) ? p.completedGames : []);
                   set.add('1_bicycle');

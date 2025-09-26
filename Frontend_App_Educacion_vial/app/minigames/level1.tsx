@@ -2,9 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/utils/colors';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter, type Href, useFocusEffect } from 'expo-router';
 import { ProgressApi } from '@/services/progress';
 import { ImagesApi } from '@/services/images';
+import { QuizProgressService } from '@/services/quizProgress';
+import { BicycleProgressService } from '@/services/bicycleProgress';
 
 const { width } = Dimensions.get('window');
 
@@ -18,7 +20,12 @@ export default function MinigamesLevel1() {
 
   const loadProgress = useCallback(async () => {
     try {
-      const [progress, images] = await Promise.all([ProgressApi.get(), ImagesApi.list()]);
+      const [progress, images, quizProgress, bicycleCompleted] = await Promise.all([
+        ProgressApi.get(),
+        ImagesApi.list(),
+        QuizProgressService.getProgress(),
+        BicycleProgressService.isCompleted()
+      ]);
       const list: string[] = Array.isArray(progress.completedGames) ? progress.completedGames : [];
 
       const hasCat = images.some((image) => image.data?.baseImage === 'cat');
@@ -26,11 +33,16 @@ export default function MinigamesLevel1() {
       const hasSemaforo = images.some((image) => image.data?.baseImage === 'semaforo');
 
       const coloringCompleted = (hasCat && hasPatrol && hasSemaforo) || list.includes('1_coloring') || list.includes('1_6');
+      const quizCompleted =
+        quizProgress.hard?.completed === true ||
+        quizProgress.level1Completed === true ||
+        list.includes('1_quiz_vial') ||
+        list.includes('1_1');
 
       setCompletedActivities({
         coloring: coloringCompleted,
-        quiz: list.includes('1_quiz_vial') || list.includes('1_1'),
-        bicycle: list.includes('1_bicycle') || list.includes('1_2')
+        quiz: quizCompleted,
+        bicycle: bicycleCompleted || list.includes('1_bicycle') || list.includes('1_2')
       });
     } catch (e) {
       // Error loading completed activities
@@ -40,6 +52,12 @@ export default function MinigamesLevel1() {
   useEffect(() => {
     loadProgress();
   }, [loadProgress]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProgress();
+    }, [loadProgress])
+  );
 
   return (
     <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
