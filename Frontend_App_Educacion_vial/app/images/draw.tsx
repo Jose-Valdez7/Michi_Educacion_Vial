@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Dimensions, PanResponder, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import { colors } from '../../src/utils/colors';
 import { ImagesApi } from '../../src/services/images';
@@ -44,21 +44,42 @@ export default function ImagesDraw() {
   const pathsRef = useRef<Array<{ color: string; size: number; points: Array<{ x: number; y: number }> }>>([]);
   const lastSvgMarkupRef = useRef<string | null>(null);
   // ✅ Cargar estado de tareas completadas al iniciar
-  useEffect(() => {
-    (async () => {
+  const loadCompletedTasks = useCallback(async () => {
+    const initial: Record<TaskId, boolean> = { cat: false, patrol: false, semaforo: false };
+
+    try {
+      const images = await ImagesApi.list();
+
+      images.forEach((image) => {
+        const baseImage = image.data?.baseImage as TaskId | undefined;
+        if (baseImage && initial.hasOwnProperty(baseImage)) {
+          initial[baseImage] = true;
+        }
+      });
+    } catch (error) {
       try {
-        const p = await ProgressApi.get();
-        const set: Record<TaskId, boolean> = { cat: false, patrol: false, semaforo: false };
-        const list: string[] = Array.isArray(p.completedGames) ? p.completedGames : [];
-        set.cat = list.includes('1_coloring_cat');
-        set.patrol = list.includes('1_coloring_patrol');
-        set.semaforo = list.includes('1_coloring_semaforo');
-        setCompletedTasks(set);
-      } catch (e) {
-        // Error loading completed tasks
+        const progress = await ProgressApi.get();
+        const list: string[] = Array.isArray(progress.completedGames) ? progress.completedGames : [];
+        initial.cat = list.includes('1_coloring_cat');
+        initial.patrol = list.includes('1_coloring_patrol');
+        initial.semaforo = list.includes('1_coloring_semaforo');
+      } catch (_progressError) {
+        // Ignorar errores de carga
       }
-    })();
+    }
+
+    setCompletedTasks(initial);
   }, []);
+
+  useEffect(() => {
+    loadCompletedTasks();
+  }, [loadCompletedTasks]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadCompletedTasks();
+    }, [loadCompletedTasks])
+  );
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,

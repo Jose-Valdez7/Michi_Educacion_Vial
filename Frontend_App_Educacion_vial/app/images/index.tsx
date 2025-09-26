@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 import { colors } from '@/utils/colors';
 import { ProgressApi } from '@/services/progress';
 import { maybeAwardColoringSetStar } from '@/services/progress2';
+import { ImagesApi } from '@/services/images';
 
 const { width, height } = Dimensions.get('window');
 
@@ -20,24 +21,41 @@ export default function ImagesMenu() {
   const router = useRouter();
   const [completed, setCompleted] = useState<Record<TaskId, boolean>>({ cat: false, patrol: false, semaforo: false });
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const p = await ProgressApi.get();
-        const set: Record<TaskId, boolean> = { cat: false, patrol: false, semaforo: false };
-        const list: string[] = Array.isArray(p.completedGames) ? p.completedGames : [];
-        // Usamos claves compatibles con el cómputo de estrellas en welcome: `${level}_...`
-        set.cat = list.includes('1_coloring_cat');
-        set.patrol = list.includes('1_coloring_patrol');
-        set.semaforo = list.includes('1_coloring_semaforo');
-        setCompleted(set);
-        // Si ya completó las 3, asegura que exista la clave resumen del set
-        if (set.cat && set.patrol && set.semaforo) {
-          try { await maybeAwardColoringSetStar(); } catch {}
+  const loadCompleted = useCallback(async () => {
+    const next: Record<TaskId, boolean> = { cat: false, patrol: false, semaforo: false };
+
+    try {
+      const images = await ImagesApi.list();
+      images.forEach((image) => {
+        const baseImage = image.data?.baseImage as TaskId | undefined;
+        if (baseImage && Object.prototype.hasOwnProperty.call(next, baseImage)) {
+          next[baseImage] = true;
         }
+      });
+    } catch (error) {
+      try {
+        const progress = await ProgressApi.get();
+        const list: string[] = Array.isArray(progress.completedGames) ? progress.completedGames : [];
+        next.cat = list.includes('1_coloring_cat');
+        next.patrol = list.includes('1_coloring_patrol');
+        next.semaforo = list.includes('1_coloring_semaforo');
+      } catch (_progressError) {
+        // Ignorar
+      }
+    }
+
+    setCompleted(next);
+
+    if (next.cat && next.patrol && next.semaforo) {
+      try {
+        await maybeAwardColoringSetStar();
       } catch {}
-    })();
+    }
   }, []);
+
+  useEffect(() => {
+    loadCompleted();
+  }, [loadCompleted]);
 
   return (
     <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
