@@ -119,21 +119,21 @@ const QUESTIONS: Question[] = [
     options: [
       {
         id: '3A',
-        text: 'Reduzco velocidad y cambio de carril con precaución',
-        isCorrect: true,
-        feedback: '¡Correcto! Siempre cambia de carril de forma segura.',
-      },
-      {
-        id: '3B',
         text: 'Freno bruscamente y me detengo',
         isCorrect: false,
         feedback: 'Peligroso! Podrías causar un accidente por detrás.',
       },
       {
-        id: '3C',
+        id: '3B',
         text: 'Acelero y paso por encima',
         isCorrect: false,
         feedback: 'Muy peligroso! Podrías dañar tu vehículo o perder control.',
+      },
+      {
+        id: '3C',
+        text: 'Reduzco velocidad y cambio de carril con precaución',
+        isCorrect: true,
+        feedback: '¡Correcto! Siempre cambia de carril de forma segura.',
       },
     ],
   },
@@ -142,24 +142,25 @@ const QUESTIONS: Question[] = [
     title: 'Claxon inesperado',
     scenario: 'Un auto detrás de ti toca la bocina varias veces. ¿Qué debes hacer?',
     options: [
+        {
+            id: '4A',
+            text: 'Freno de golpe y salgo a la calle para que me rebasen.',
+            isCorrect: false,
+            feedback: 'Peligroso. Podrías causar un accidente.',
+          },
       {
-        id: '4A',
+        id: '4B',
         text: 'Mantengo mi carril en la ciclovía sin perder la calma.',
         isCorrect: true,
         feedback: 'Exacto. Mantén tu carril y evita maniobras bruscas.',
       },
       {
-        id: '4B',
+        id: '4C',
         text: 'Señalizo con la mano que continuaré recto y sigo con cuidado.',
         isCorrect: true,
         feedback: 'Muy bien, señalizar ayuda a otros a entender tus movimientos.',
       },
-      {
-        id: '4C',
-        text: 'Freno de golpe y salgo a la calle para que me rebasen.',
-        isCorrect: false,
-        feedback: 'Peligroso. Podrías causar un accidente.',
-      },
+      
     ],
   },
   {
@@ -190,10 +191,10 @@ const QUESTIONS: Question[] = [
 ];
 
 const OBSTACLE_TYPES = [
-  { type: 'car' as const, emoji: '🚗', width: 60, height: 40, speed: 1.5 },
-  { type: 'truck' as const, emoji: '🚛', width: 80, height: 50, speed: 1 },
+  { type: 'car' as const, emoji: '🚗', width: 60, height: 40, speed: 1.2 },
+  { type: 'truck' as const, emoji: '🚛', width: 80, height: 50, speed: 0.8 },
   { type: 'stone' as const, emoji: '🪨', width: 30, height: 30, speed: 0 },
-  { type: 'animal' as const, emoji: '🐕', width: 35, height: 35, speed: 0.5 },
+  { type: 'animal' as const, emoji: '🐈', width: 35, height: 35, speed: 0.4 },
 ];
 
 export default function BicycleGameScreen() {
@@ -206,7 +207,8 @@ export default function BicycleGameScreen() {
   const [collisionCount, setCollisionCount] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
-  const [askedCount, setAskedCount] = useState(0);
+  // Número de preguntas ya disparadas por distancia (0..5)
+  const [questionsTriggered, setQuestionsTriggered] = useState(0);
   const [level, setLevel] = useState(1);
   
   // Player State
@@ -215,7 +217,7 @@ export default function BicycleGameScreen() {
   
   // Game Objects
   const [obstacles, setObstacles] = useState<MovingObstacle[]>([]);
-  const gameLoopRef = useRef<number>();
+  const gameLoopRef = useRef<number | null>(null);
   const lastQuestionDistance = useRef(0);
   const lastFrameTime = useRef<number | null>(null);
   const roadOffsetRef = useRef(0);
@@ -324,18 +326,27 @@ export default function BicycleGameScreen() {
   // Check for Questions
   const checkForQuestion = useCallback(() => {
     if (gameState !== GameState.Playing) return;
-    if (askedCount >= 5) return;
-    if (distance - lastQuestionDistance.current >= QUESTION_DISTANCE) {
-      const nextIndex = askedCount; // 0..4
+    if (questionsTriggered >= 5) return;
+    // Disparar exactamente en 200, 400, 600, 800, 1000m
+    const nextThreshold = (questionsTriggered + 1) * QUESTION_DISTANCE;
+    if (distance >= nextThreshold) {
+      const nextIndex = questionsTriggered; // 0..4
       const question = QUESTIONS[nextIndex];
       if (question) {
+        // Detener inmediatamente el game loop
+        if (gameLoopRef.current) {
+          cancelAnimationFrame(gameLoopRef.current);
+          gameLoopRef.current = null;
+        }
         setCurrentQuestion(question);
         setGameState(GameState.Question);
-        lastQuestionDistance.current = distance;
+        lastQuestionDistance.current = nextThreshold;
         lastFrameTime.current = null; // prevent dt spike when resuming
+        // marcar que ya se disparó esta pregunta
+        setQuestionsTriggered(prev => prev + 1);
       }
     }
-  }, [distance, askedCount, gameState]);
+  }, [distance, questionsTriggered, gameState]);
 
   // Game Loop
   const gameLoop = useCallback(() => {
@@ -353,12 +364,12 @@ export default function BicycleGameScreen() {
     // Animate road dashed lines
     roadOffsetRef.current = (roadOffsetRef.current + 200 * dt) % (SCREEN_HEIGHT);
 
-    // Update obstacles
+    // Update obstacles (slower descent)
     setObstacles(prev => 
       prev
         .map(obstacle => ({
           ...obstacle,
-          y: obstacle.y + (SPEED_MPS * 20) * dt + obstacle.speed * 10,
+          y: obstacle.y + (SPEED_MPS * 16) * dt + obstacle.speed * 6,
         }))
         .filter(obstacle => obstacle.y < SCREEN_HEIGHT + 100)
     );
@@ -391,7 +402,7 @@ export default function BicycleGameScreen() {
     setCollisionCount(0);
     setWrongCount(0);
     setCorrectCount(0);
-    setAskedCount(0);
+    setQuestionsTriggered(0);
     setLevel(1);
     setObstacles([]);
     lastQuestionDistance.current = 0;
@@ -435,21 +446,27 @@ export default function BicycleGameScreen() {
       setFeedback('¡Correcto! Continúa avanzando.');
       setScore(prev => prev + 100);
       setCorrectCount(prev => prev + 1);
-      setAskedCount(prev => prev + 1);
       
       setTimeout(() => {
         setCurrentQuestion(null);
         setSelectedOptionIds([]);
         setFeedback(null);
         setFeedbackStatus('neutral');
-        // Win if 5 correct
+        // Win only after answering the 5th question correctly
         lastFrameTime.current = null;
-        setGameState(prev => (prev === GameState.Question && (correctCount + 1) >= 5 ? GameState.Completed : GameState.Playing));
+        const newState = (correctCount + 1) >= 5 && questionsTriggered >= 5
+          ? GameState.Completed
+          : GameState.Playing;
+        setGameState(newState);
+        
+        // Reiniciar el game loop si volvemos a Playing
+        if (newState === GameState.Playing) {
+          gameLoopRef.current = requestAnimationFrame(gameLoop);
+        }
       }, 2000);
     } else {
       const newWrong = wrongCount + 1;
       setWrongCount(newWrong);
-      setAskedCount(prev => prev + 1);
       setFeedbackStatus('error');
       setFeedback(selectedOptions[0]?.feedback || 'Respuesta incorrecta. Intenta de nuevo.');
       
@@ -463,10 +480,12 @@ export default function BicycleGameScreen() {
           setFeedback(null);
           setFeedbackStatus('neutral');
           lastFrameTime.current = null;
+          // Reiniciar el game loop para continuar jugando
+          gameLoopRef.current = requestAnimationFrame(gameLoop);
         }, 2000);
       }
     }
-  }, [currentQuestion, selectedOptionIds, wrongCount, correctCount]);
+  }, [currentQuestion, selectedOptionIds, wrongCount, correctCount, questionsTriggered, gameLoop]);
 
   // Game Loop Effect
   useEffect(() => {
@@ -538,6 +557,46 @@ export default function BicycleGameScreen() {
           <TouchableOpacity style={styles.backButton} onPress={resetGame}>
             <Text style={styles.backButtonText}>Menú Principal</Text>
           </TouchableOpacity>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  // Render Completed
+  if (gameState === GameState.Completed) {
+    return (
+      <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
+        <View style={styles.gameOverContainer}>
+          <Text style={styles.gameOverTitle}>🎉 ¡Felicidades!</Text>
+          <Text style={styles.gameOverText}>
+            Has completado tu paseo en bicicleta respondiendo 5 preguntas correctamente.
+          </Text>
+          <View style={{ width: '100%', maxWidth: 400 }}>
+            <TouchableOpacity
+              style={[styles.startButton, { backgroundColor: colors.buttonPrimary }]}
+              onPress={() => {
+                lastFrameTime.current = null;
+                setGameState(GameState.Playing);
+              }}
+            >
+              <Text style={styles.startButtonText}>Seguir jugando</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={async () => {
+                try {
+                  const p = await ProgressApi.get();
+                  const set = new Set<string>(Array.isArray(p.completedGames) ? p.completedGames : []);
+                  set.add('1_bicycle');
+                  await ProgressApi.update({ completedGames: Array.from(set) });
+                } catch {}
+                router.replace('/minigames/level1' as Href);
+              }}
+            >
+              <Text style={styles.startButtonText}>Completar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
     );
@@ -695,29 +754,6 @@ export default function BicycleGameScreen() {
         </View>
       </Modal>
 
-      {/* Completed Modal */}
-      <Modal visible={gameState === GameState.Completed} animationType="fade" transparent>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>🎉 ¡Felicidades!</Text>
-            <Text style={styles.modalScenario}>Has completado tu paseo en bicicleta respondiendo 5 preguntas correctamente.</Text>
-            <TouchableOpacity
-              style={styles.startButton}
-              onPress={async () => {
-                try {
-                  const p = await ProgressApi.get();
-                  const set = new Set<string>(Array.isArray(p.completedGames) ? p.completedGames : []);
-                  set.add('1_bicycle');
-                  await ProgressApi.update({ completedGames: Array.from(set) });
-                } catch {}
-                router.replace('/minigames/level1' as Href);
-              }}
-            >
-              <Text style={styles.startButtonText}>Continuar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </LinearGradient>
   );
 }
@@ -917,9 +953,9 @@ const styles = StyleSheet.create({
   modalCard: {
     backgroundColor: colors.white,
     borderRadius: 20,
-    padding: 20,
-    width: '100%',
-    maxWidth: 400,
+    padding: 24,
+    width: '95%',
+    maxWidth: 480,
   },
   modalTitle: {
     fontSize: 20,
