@@ -155,7 +155,7 @@ export default function Welcome() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.islandsContainer}>
-          {([1,2,3,4,5] as const).map((lvl) => {
+          {([1, 2, 3, 4, 5] as const).map((lvl) => {
             const isUnlocked = progress.unlockedLevels?.includes(lvl) ?? (lvl === 1);
             const isLocked = !isUnlocked;
 
@@ -167,9 +167,9 @@ export default function Welcome() {
               <View key={lvl} style={[styles.islandCard, isLocked && styles.lockedIslandCard]}>
                 <LinearGradient colors={['#FFD700', '#FFA500']} style={styles.islandGradient}>
                   <View style={styles.islandHeaderArea}>
-                  <View style={styles.starsBackground}>
+                    <View style={styles.starsBackground}>
                       <View style={styles.starsContainer}>
-                        {[1,2,3].map((n) => (
+                        {[1, 2, 3].map((n) => (
                           <Text key={n} style={styles.starText}>
                             {completedStars(progress.completedGames, lvl) >= n ? '⭐' : '☆'}
                           </Text>
@@ -207,7 +207,7 @@ export default function Welcome() {
                                 useNativeDriver: true,
                               }),
                             ]).start();
-                            
+
                             setTimeout(() => {
                               router.push('/minigames/level1' as Href);
                             }, 150);
@@ -231,9 +231,9 @@ export default function Welcome() {
                       <Text style={styles.lockMessage}>Nivel Bloqueado</Text>
                       <Text style={styles.lockRequirement}>
                         {lvl === 2 ? (shouldUnlockLevel2 ? '¡Desbloqueado!' : 'Completa las 3 estrellas del Nivel 1') :
-                         lvl === 3 ? 'Completa el Nivel 2' :
-                         lvl === 4 ? 'Completa el Nivel 3' :
-                         'Completa el Nivel 4'}
+                          lvl === 3 ? 'Completa el Nivel 2' :
+                            lvl === 4 ? 'Completa el Nivel 3' :
+                              'Completa el Nivel 4'}
                       </Text>
                     </View>
                   )}
@@ -324,14 +324,14 @@ const styles = StyleSheet.create({
   islandCard: { width: width * 0.8, height: height * 0.56, marginRight: 16, borderRadius: 30, overflow: 'hidden', shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 10, borderWidth: 3, borderColor: '#000000' },
   islandGradient: { flex: 1, padding: 20, borderRadius: 10, position: 'relative' },
   islandHeaderArea: { alignItems: 'center', flex: 1, justifyContent: 'flex-start', zIndex: 1 },
-  islandImage: { width: width * 0.55, height: width * 0.55, marginBottom:1, marginTop : 0.25,  },
+  islandImage: { width: width * 0.55, height: width * 0.55, marginBottom: 1, marginTop: 0.25, },
   titleImage: { width: width * 0.4, height: 60, alignSelf: 'center', marginBottom: 5 },
   starsBackground: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 7 },
   starsContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   starText: { fontSize: 20, marginHorizontal: 3 },
   islandButtonContainer: { zIndex: 1, marginTop: 20 },
   islandButton: { borderRadius: 16 },
-  playImage: { width: width * 1, height:70, alignSelf: 'center' },
+  playImage: { width: width * 1, height: 70, alignSelf: 'center' },
   lockedIslandCard: { opacity: 0.7 },
   lockedIslandImage: { opacity: 0.6 },
   lockedIslandTitle: { color: '#cccccc' },
