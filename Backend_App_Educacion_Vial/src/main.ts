@@ -18,7 +18,7 @@ async function bootstrap() {
   });
 
   // Configuración de CORS
-  
+
   // Configuración de CORS
   const allowedOrigins = [
     'http://localhost:19006',
@@ -36,15 +36,18 @@ async function bootstrap() {
     'http://localhost:9999',
     'https://ovvtv10-anonymous-8081.exp.direct',
     'http://localhost:*', // Permitir cualquier puerto localhost
-    'exp://192.168.68.110:19000', // Asegúrate de que esta sea la URL de tu Expo Go
-    /^https?:\/\/192\.168\.68\.\d{1,3}:\d+$/, // Permite cualquier puerto en tu red local
+    'exp://192.168.68.110:19000',
+    'exp://192.168.68.128:19000',
+    'http://192.168.68.128:19006',
+    'http://192.168.68.128:*', // Asegúrate de que esta sea la URL de tu Expo Go
+    /^https?:\/\/192\.168\.100\.\d{1,3}:\d+$/, // Permite cualquier puerto en tu red local
   ];
 
   app.enableCors({
     origin: (origin, callback) => {
       // Permitir solicitudes sin origen (como aplicaciones móviles o solicitudes de Postman)
       if (!origin) return callback(null, true);
-      
+
       if (allowedOrigins.some(allowedOrigin => {
         if (typeof allowedOrigin === 'string') {
           return origin === allowedOrigin;
@@ -55,14 +58,14 @@ async function bootstrap() {
       })) {
         return callback(null, true);
       }
-      
+
       const msg = 'El CORS policy no permite el acceso desde este origen.';
       return callback(new Error(msg), false);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
-  
+
 
   // Configuración de WebSocket
   app.useWebSocketAdapter(new IoAdapter(app));
