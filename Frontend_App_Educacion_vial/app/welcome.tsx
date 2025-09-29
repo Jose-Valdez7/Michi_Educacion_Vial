@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   starText: { fontSize: 20, marginHorizontal: 3 },
   islandButtonContainer: { zIndex: 1, marginTop: 20 },
   islandButton: { borderRadius: 16 },
-  playImage: { width: width * 0.5, height:100, alignSelf: 'center' },
+  playImage: { width: width * 1, height:70, alignSelf: 'center' },
   lockedIslandCard: { opacity: 0.7 },
   lockedIslandImage: { opacity: 0.6 },
   lockedIslandTitle: { color: '#cccccc' },
