@@ -6,38 +6,37 @@ const cors = require('cors');
 const app = express();
 const server = createServer(app);
 
-// Configuración de CORS más permisiva para desarrollo
+// Configuración de CORS más permisiva para desarrollo móvil
 app.use(cors({
   origin: true, // Permitir cualquier origen durante desarrollo
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true
 }));
 
-// Crear servidor Socket.IO
+// Crear servidor Socket.IO optimizado para móvil
 const io = new Server(server, {
   cors: {
-    origin: "*", // Más permisivo para desarrollo
+    origin: "*", // Más permisivo para desarrollo móvil
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
   },
-  transports: ['websocket', 'polling'],
-  pingTimeout: 60000,
-  pingInterval: 25000,
-  allowEIO3: true,
-  maxHttpBufferSize: 1e8
+  transports: ['websocket', 'polling'], // WebSocket primero, polling como fallback
+  pingTimeout: 60000,    // Más permisivo para conexiones móviles
+  pingInterval: 25000,   // Intervalo de ping más frecuente
+  allowEIO3: true,       // Permitir versiones anteriores de Engine.IO
+  maxHttpBufferSize: 1e8 // Buffer más grande para mensajes
 });
 
 // Almacenar salas
 const rooms = new Map();
 
 io.on('connection', (socket) => {
-  console.log('Cliente conectado:', socket.id);
-  console.log('Dirección IP del cliente:', socket.handshake.address);
-  console.log('Orígenes permitidos:', socket.handshake.headers.origin);
+  console.log('📱 Cliente móvil conectado:', socket.id);
+  console.log('🌐 IP del cliente:', socket.handshake.address);
+  console.log('🔗 Origen:', socket.handshake.headers.origin);
 
   socket.on('createRoom', (data) => {
-    console.log('Creando sala:', data);
-    console.log('Cliente ID:', socket.id, 'Player ID:', data.playerId);
+    console.log('🏠 Creando sala desde móvil:', data);
 
     let roomCode;
     if (data.roomCode) {
@@ -74,13 +73,11 @@ io.on('connection', (socket) => {
       players: Object.values(room.players)
     });
 
-    console.log('Sala creada:', roomCode);
+    console.log('✅ Sala creada exitosamente:', roomCode);
   });
 
   socket.on('joinRoom', (data) => {
-    console.log('Uniendo a sala:', data);
-    console.log('Cliente ID:', socket.id, 'Player ID:', data.playerId);
-    console.log('Intentando unirse a sala:', data.roomCode);
+    console.log('👥 Uniendo a sala desde móvil:', data.roomCode);
 
     const room = rooms.get(data.roomCode);
 
@@ -107,11 +104,11 @@ io.on('connection', (socket) => {
       players: Object.values(room.players)
     });
 
-    console.log('Jugador unido:', data.playerName);
+    console.log('✅ Jugador unido exitosamente:', data.playerName);
   });
 
   socket.on('startCompetition', (data) => {
-    console.log('Iniciando competencia:', data);
+    console.log('🚀 Iniciando competencia desde móvil:', data);
 
     const room = rooms.get(data.roomCode);
 
@@ -136,30 +133,11 @@ io.on('connection', (socket) => {
       players: Object.values(room.players)
     });
 
-    console.log('Competencia iniciada por:', player.name);
+    console.log('✅ Competencia iniciada por:', player.name);
   });
 
-  socket.on('disconnect', () => {
-    console.log('Cliente desconectado:', socket.id);
-    console.log('Dirección IP del cliente desconectado:', socket.handshake.address);
-
-    rooms.forEach((room, roomCode) => {
-      if (room.players[socket.id]) {
-        console.log('Eliminando jugador', socket.id, 'de sala', roomCode);
-        delete room.players[socket.id];
-
-        if (Object.keys(room.players).length === 0) {
-          rooms.delete(roomCode);
-          console.log('Sala eliminada:', roomCode);
-        } else {
-          io.to(roomCode).emit('playerLeft', {
-            playerId: socket.id,
-            players: Object.values(room.players)
-          });
-        }
-      }
   socket.on('leaveRoom', (data) => {
-    console.log('Jugador dejó la sala manualmente:', data);
+    console.log('👋 Jugador dejó la sala:', data);
 
     const room = rooms.get(data.roomCode);
     if (room && room.players[socket.id]) {
@@ -168,7 +146,7 @@ io.on('connection', (socket) => {
 
       if (Object.keys(room.players).length === 0) {
         rooms.delete(data.roomCode);
-        console.log('Sala eliminada:', data.roomCode);
+        console.log('🗑️ Sala eliminada:', data.roomCode);
       } else {
         io.to(data.roomCode).emit('playerLeft', {
           playerId: socket.id,
@@ -178,17 +156,27 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('getRooms', () => {
-    const roomsInfo = {};
-    rooms.forEach((room, code) => {
-      roomsInfo[code] = {
-        players: Object.keys(room.players).length,
-        maxPlayers: room.maxPlayers,
-        gameState: room.gameState
-      };
+  socket.on('disconnect', () => {
+    console.log('📱 Cliente móvil desconectado:', socket.id);
+
+    rooms.forEach((room, roomCode) => {
+      if (room.players[socket.id]) {
+        console.log('🧹 Eliminando jugador', socket.id, 'de sala', roomCode);
+        delete room.players[socket.id];
+
+        if (Object.keys(room.players).length === 0) {
+          rooms.delete(roomCode);
+          console.log('🗑️ Sala eliminada por abandono:', roomCode);
+        } else {
+          io.to(roomCode).emit('playerLeft', {
+            playerId: socket.id,
+            players: Object.values(room.players)
+          });
+        }
+      }
     });
-    socket.emit('roomsList', roomsInfo);
   });
+});
 
 // Función para generar código único de sala
 function generateRoomCode() {
@@ -202,7 +190,11 @@ function generateRoomCode() {
 
 // Ruta de prueba
 app.get('/', (req, res) => {
-  res.json({ message: 'Servidor de competencia funcionando!', timestamp: new Date().toISOString() });
+  res.json({
+    message: 'Servidor de competencia móvil funcionando!',
+    timestamp: new Date().toISOString(),
+    platform: 'React Native / Expo'
+  });
 });
 
 // Endpoint de health check
@@ -212,7 +204,8 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     rooms: rooms.size,
-    connections: io.engine.clientsCount
+    connections: io.engine.clientsCount,
+    platform: 'React Native / Expo'
   });
 });
 
@@ -229,17 +222,18 @@ app.get('/rooms', (req, res) => {
   res.json(roomsInfo);
 });
 
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3003;
 
 // Solo iniciar servidor si no estamos en entorno de Expo
-if (require.main === module) {
+if (typeof window === 'undefined' && require.main === module) {
   server.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    console.log(`🚀 Servidor móvil corriendo en puerto ${PORT}`);
+    console.log(`📱 Optimizado para React Native / Expo`);
     console.log(`📡 Socket.IO disponible en ws://localhost:${PORT}`);
     console.log(`🔗 HTTP API disponible en http://localhost:${PORT}`);
     console.log(`🏥 Health check: http://localhost:${PORT}/health`);
     console.log(`📊 Salas activas: http://localhost:${PORT}/rooms`);
-    console.log(`🌐 CORS configurado para aceptar conexiones desde cualquier origen`);
+    console.log(`🌐 CORS configurado para desarrollo móvil`);
   });
 }
 

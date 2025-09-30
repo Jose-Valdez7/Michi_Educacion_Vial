@@ -24,7 +24,7 @@ const colors = {
   gradientSecondary: ['#FF6B6B', '#FF8E53'] as const
 };
 
-const SERVER_URL = __DEV__ ? 'http://localhost:3002' : 'http://192.168.68.117:3002';
+const SERVER_URL = __DEV__ ? 'http://localhost:3003' : 'http://192.168.68.117:3003';
 const MAX_PLAYERS = 4;
 
 interface Player {
@@ -57,16 +57,19 @@ export default function CompetitionScreen() {
     const initSocket = async () => {
       try {
         socketRef.current = io(SERVER_URL, {
-          transports: ['websocket', 'polling'],
-          reconnectionAttempts: 5,
-          reconnectionDelay: 1000,
-          timeout: 20000,
+          transports: ['websocket', 'polling'], // WebSocket primero, polling como fallback
+          reconnection: true,                  // Habilitar reconexión automática
+          reconnectionAttempts: 10,            // Más intentos de reconexión
+          reconnectionDelay: 1000,             // Delay entre intentos
+          timeout: 30000,                      // Timeout más largo para móvil
+          forceNew: true,                      // Nueva conexión cada vez
+          autoConnect: true,                   // Conectar automáticamente
         });
 
         const socket = socketRef.current;
 
         socket.on('connect', () => {
-          console.log(' Conectado al servidor Socket.IO');
+          console.log('✅ Conectado al servidor Socket.IO');
           setConnectionStatus('connected');
           setIsConnected(true);
 
@@ -85,37 +88,37 @@ export default function CompetitionScreen() {
         });
 
         socket.on('connect_error', (error) => {
-          console.error('Error de conexión:', error);
+          console.error('❌ Error de conexión Socket.IO:', error.message);
+          console.error('🔍 Tipo de error:', error.name);
           setConnectionStatus('error');
         });
 
         socket.on('disconnect', (reason) => {
-          console.log('Desconectado del servidor:', reason);
+          console.log('🔌 Desconectado del servidor:', reason);
           setConnectionStatus('disconnected');
           setIsConnected(false);
         });
 
         socket.on('roomCreated', (data: { roomCode: string }) => {
+          console.log('🏠 Sala creada:', data.roomCode);
           roomCode.current = data.roomCode;
           router.setParams({ roomCode: data.roomCode });
         });
 
         socket.on('roomJoined', (data: { players: Player[] }) => {
+          console.log('👥 Jugadores en sala:', data.players.length);
           setPlayers(data.players);
         });
 
         socket.on('competitionStarted', (data: { roomCode: string; players: Player[] }) => {
+          console.log('🚀 Competencia iniciada en sala:', data.roomCode);
           setPlayers(data.players);
           setGameState('in_progress');
           Alert.alert('¡Competencia Iniciada!', 'La competencia ha comenzado. ¡Buena suerte!');
         });
 
-        socket.on('disconnect', () => {
-          setConnectionStatus('disconnected');
-          setIsConnected(false);
-        });
-
         socket.on('error', (error: string) => {
+          console.error('⚠️ Error del servidor:', error);
           Alert.alert('Error', error);
           setConnectionStatus('error');
         });
@@ -239,6 +242,7 @@ export default function CompetitionScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.white} />
           <Text style={styles.loadingText}>Conectando al servidor...</Text>
+          <Text style={styles.loadingSubtext}>Iniciando servidor integrado...</Text>
         </View>
       </LinearGradient>
     );
@@ -252,13 +256,24 @@ export default function CompetitionScreen() {
             {connectionStatus === 'error' ? 'Error de conexión' : 'Desconectado del servidor'}
           </Text>
           <Text style={styles.errorDescription}>
-            No se pudo conectar al servidor. Por favor, verifica tu conexión a internet e inténtalo de nuevo.
+            {connectionStatus === 'error'
+              ? 'No se pudo conectar al servidor integrado. Asegúrate de que el servidor esté corriendo en el puerto 3002.'
+              : 'Se perdió la conexión con el servidor. Verifica tu conexión a internet.'
+            }
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
-            onPress={() => router.replace('/quiz/main')}
+            onPress={() => {
+              setConnectionStatus('connecting');
+              setIsConnected(false);
+              // Forzar reconexión
+              if (socketRef.current) {
+                socketRef.current.disconnect();
+                socketRef.current.connect();
+              }
+            }}
           >
-            <Text style={styles.retryButtonText}>Volver al inicio</Text>
+            <Text style={styles.retryButtonText}>Reintentar conexión</Text>
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -407,6 +422,7 @@ const styles = StyleSheet.create({
   smallButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { color: '#FFFFFF', marginTop: 16, fontSize: 16 },
+  loadingSubtext: { color: 'rgba(255, 255, 255, 0.7)', marginTop: 8, fontSize: 14 },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   errorText: { color: '#FFFFFF', fontSize: 24, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
   errorDescription: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 16, textAlign: 'center', marginBottom: 24, lineHeight: 24 },

@@ -1,4 +1,4 @@
-﻿import { useCallback, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { Audio } from "expo-av";
 import { Platform } from "react-native";
 
@@ -9,7 +9,7 @@ export const useSound = () => {
     try {
       // En una implementación real, aquí cargarías archivos de sonido
       // Por ahora, usaremos sonidos del sistema o generaremos sonidos programáticamente
-      
+
       // Para sonidos simples, podemos usar frecuencias del sistema
       if (Platform.OS === "ios") {
         // En iOS podríamos usar AudioServicesPlaySystemSound
@@ -18,10 +18,10 @@ export const useSound = () => {
         // En Android podríamos usar Ringtone o MediaPlayer
         console.log(`Playing sound: ${soundFile}`);
       }
-      
+
       // Para desarrollo, simplemente logueamos el sonido que se reproduciría
       console.log(`🔊 Sound: ${soundFile}`);
-      
+
     } catch (error) {
       console.error("Error playing sound:", error);
     }
@@ -56,3 +56,6 @@ export const useSound = () => {
     playSound
   };
 };
+
+// Exportación por defecto para evitar el warning de Expo Router
+export default useSound;
