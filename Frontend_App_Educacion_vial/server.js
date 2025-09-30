@@ -158,9 +158,37 @@ io.on('connection', (socket) => {
           });
         }
       }
-    });
+  socket.on('leaveRoom', (data) => {
+    console.log('Jugador dejó la sala manualmente:', data);
+
+    const room = rooms.get(data.roomCode);
+    if (room && room.players[socket.id]) {
+      delete room.players[socket.id];
+      socket.leave(data.roomCode);
+
+      if (Object.keys(room.players).length === 0) {
+        rooms.delete(data.roomCode);
+        console.log('Sala eliminada:', data.roomCode);
+      } else {
+        io.to(data.roomCode).emit('playerLeft', {
+          playerId: socket.id,
+          players: Object.values(room.players)
+        });
+      }
+    }
   });
-});
+
+  socket.on('getRooms', () => {
+    const roomsInfo = {};
+    rooms.forEach((room, code) => {
+      roomsInfo[code] = {
+        players: Object.keys(room.players).length,
+        maxPlayers: room.maxPlayers,
+        gameState: room.gameState
+      };
+    });
+    socket.emit('roomsList', roomsInfo);
+  });
 
 // Función para generar código único de sala
 function generateRoomCode() {
@@ -202,13 +230,17 @@ app.get('/rooms', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3002;
-server.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-  console.log(`📡 Socket.IO disponible en ws://192.168.68.117:${PORT}`);
-  console.log(`🔗 HTTP API disponible en http://192.168.68.117:${PORT}`);
-  console.log(`🏥 Health check: http://192.168.68.117:${PORT}/health`);
-  console.log(`📊 Salas activas: http://192.168.68.117:${PORT}/rooms`);
-  console.log(`🌐 CORS configurado para aceptar conexiones desde cualquier origen`);
-});
 
-module.exports = { app, server, io };
+// Solo iniciar servidor si no estamos en entorno de Expo
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    console.log(`📡 Socket.IO disponible en ws://localhost:${PORT}`);
+    console.log(`🔗 HTTP API disponible en http://localhost:${PORT}`);
+    console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+    console.log(`📊 Salas activas: http://localhost:${PORT}/rooms`);
+    console.log(`🌐 CORS configurado para aceptar conexiones desde cualquier origen`);
+  });
+}
+
+module.exports = { app, server, io, rooms };

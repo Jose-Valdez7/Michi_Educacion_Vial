@@ -24,7 +24,7 @@ const colors = {
   gradientSecondary: ['#FF6B6B', '#FF8E53'] as const
 };
 
-const SERVER_URL = 'http://192.168.68.117:3002';
+const SERVER_URL = __DEV__ ? 'http://localhost:3002' : 'http://192.168.68.117:3002';
 const MAX_PLAYERS = 4;
 
 interface Player {
@@ -57,14 +57,16 @@ export default function CompetitionScreen() {
     const initSocket = async () => {
       try {
         socketRef.current = io(SERVER_URL, {
-          transports: ['websocket'],
+          transports: ['websocket', 'polling'],
           reconnectionAttempts: 5,
           reconnectionDelay: 1000,
+          timeout: 20000,
         });
 
         const socket = socketRef.current;
 
         socket.on('connect', () => {
+          console.log(' Conectado al servidor Socket.IO');
           setConnectionStatus('connected');
           setIsConnected(true);
 
@@ -80,6 +82,17 @@ export default function CompetitionScreen() {
           }
           // Si no hay initialRoomCode, NO crear sala automáticamente
           // El usuario verá las opciones de crear/unirse
+        });
+
+        socket.on('connect_error', (error) => {
+          console.error('Error de conexión:', error);
+          setConnectionStatus('error');
+        });
+
+        socket.on('disconnect', (reason) => {
+          console.log('Desconectado del servidor:', reason);
+          setConnectionStatus('disconnected');
+          setIsConnected(false);
         });
 
         socket.on('roomCreated', (data: { roomCode: string }) => {
