@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Dimensions, SafeAreaView, Animated, Image, Easing } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Dimensions, Animated, Image, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/utils/colors';
 import { AuthService } from '@/services/auth';
 
