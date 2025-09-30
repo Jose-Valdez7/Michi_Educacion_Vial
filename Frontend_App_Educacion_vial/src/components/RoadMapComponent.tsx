@@ -6,10 +6,10 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
-  ScrollView,
-  SafeAreaView
+  ScrollView
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../utils/colors';
 import { animations } from '../utils/animations';
 
@@ -21,8 +21,39 @@ interface RoadMapComponentProps {
 }
 
 export default function RoadMapComponent({ navigation, route }: RoadMapComponentProps) {
-  // ...existing code...
-  // (El resto del componente se mantiene igual, adaptando imports y tipado)
+  // Componente funcional básico
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Mapa de Ruta Educativo</Text>
+          <Text style={styles.subtitle}>Componente de mapa de ruta funcionando</Text>
+        </View>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
 }
 
-// ...existing code...
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.primary,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.white,
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: colors.white,
+    textAlign: 'center',
+  },
+});

@@ -226,7 +226,7 @@ export default function QuizLevels() {
         onPress={() => router.replace('/minigames/level1' as Href)}
         activeOpacity={0.8}
       >
-        <Image source={require('../../assets/images/btn-volver.png')} style={{ width: 96, height: 84 }} resizeMode="contain" />
+        {/* <Image source={require('../../assets/images/btn-volver.png')} style={{ width: 96, height: 84 }} resizeMode="contain" /> */}
       </TouchableOpacity>
     </LinearGradient>
   );
