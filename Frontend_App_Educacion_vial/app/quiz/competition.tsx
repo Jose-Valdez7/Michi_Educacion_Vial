@@ -16,7 +16,6 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { io, Socket } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
 import { v4 as uuidv4 } from 'uuid';
-import { Ionicons } from '@expo/vector-icons';
 
 const colors = {
   primary: '#007AFF',
@@ -25,7 +24,7 @@ const colors = {
   gradientSecondary: ['#FF6B6B', '#FF8E53'] as const
 };
 
-const SERVER_URL = 'http://192.168.68.110:3002';
+const SERVER_URL = 'http://192.168.68.117:3002';
 const MAX_PLAYERS = 4;
 
 interface Player {
@@ -66,21 +65,12 @@ export default function CompetitionScreen() {
         const socket = socketRef.current;
 
         socket.on('connect', () => {
-          
           setConnectionStatus('connected');
           setIsConnected(true);
 
-          if (!initialRoomCode) {
-            const newRoomCode = generateRoomCode();
-            roomCode.current = newRoomCode;
-            socket.emit('createRoom', {
-              roomCode: newRoomCode,
-              maxPlayers: MAX_PLAYERS,
-              playerId: playerIdRef.current,
-              playerName: playerName.current
-            });
-            setIsHost(true);
-          } else {
+          // Solo crear sala automáticamente si hay initialRoomCode (navegando desde otra página)
+          // Si no hay initialRoomCode, dejar que el usuario elija crear o unirse manualmente
+          if (initialRoomCode) {
             roomCode.current = initialRoomCode;
             socket.emit('joinRoom', {
               roomCode: initialRoomCode,
@@ -88,33 +78,31 @@ export default function CompetitionScreen() {
               playerName: playerName.current
             });
           }
+          // Si no hay initialRoomCode, NO crear sala automáticamente
+          // El usuario verá las opciones de crear/unirse
         });
 
         socket.on('roomCreated', (data: { roomCode: string }) => {
-          
           roomCode.current = data.roomCode;
           router.setParams({ roomCode: data.roomCode });
         });
 
         socket.on('roomJoined', (data: { players: Player[] }) => {
-          
           setPlayers(data.players);
         });
 
-        socket.on('playerJoined', (player: Player) => {
-          
-          setPlayers(prev => [...prev, player]);
-          Alert.alert(`${player.name} se ha unido a la sala`);
+        socket.on('competitionStarted', (data: { roomCode: string; players: Player[] }) => {
+          setPlayers(data.players);
+          setGameState('in_progress');
+          Alert.alert('¡Competencia Iniciada!', 'La competencia ha comenzado. ¡Buena suerte!');
         });
 
         socket.on('disconnect', () => {
-          
           setConnectionStatus('disconnected');
           setIsConnected(false);
         });
 
         socket.on('error', (error: string) => {
-          
           Alert.alert('Error', error);
           setConnectionStatus('error');
         });
@@ -125,7 +113,6 @@ export default function CompetitionScreen() {
           }
         };
       } catch (error) {
-        
         setConnectionStatus('error');
         Alert.alert('Error', 'No se pudo conectar al servidor. Intenta de nuevo más tarde.');
       }
@@ -168,7 +155,6 @@ export default function CompetitionScreen() {
       }
       Alert.alert('Código copiado', `Código de sala: ${roomCode.current}`);
     } catch (error) {
-      
       Alert.alert('Error', 'No se pudo copiar el código al portapapeles');
     }
   };
@@ -234,130 +220,165 @@ export default function CompetitionScreen() {
     );
   }
 
-  if (gameState === 'waiting' || gameState === 'starting') {
+  if (connectionStatus === 'connecting' || !isConnected) {
     return (
       <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={leaveRoom} style={styles.smallButton}>
-            <Text style={styles.smallButtonText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Sala de Competencia</Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <View style={styles.lobbyContainer}>
-          <View style={styles.roomCodeContainer}>
-            <Text style={styles.roomCodeTitle}>Código de Sala:</Text>
-            <TouchableOpacity style={styles.roomCodeButton} onPress={copyRoomCode}>
-              <Text style={styles.roomCodeText}>{roomCode.current}</Text>
-              <Text style={styles.copyIcon}>📋</Text>
-            </TouchableOpacity>
-            <Text style={styles.roomCodeHint}>(Toca para copiar)</Text>
-          </View>
-
-          <View style={styles.playersSection}>
-            <Text style={styles.playersTitle}>Jugadores ({players.length}/4):</Text>
-            <View style={styles.playersList}>
-              {players.length > 0 ? (
-                players.map((player, index) => (
-                  <View key={player.id} style={[styles.playerItem, player.id === playerIdRef.current && styles.currentPlayerItem]}>
-                    <Text style={styles.playerName}>{player.name} {player.isHost && '👑'}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.noPlayers}>Esperando jugadores...</Text>
-              )}
-              {Array(MAX_PLAYERS - players.length).fill(0).map((_, index) => (
-                <View key={`empty-${index}`} style={styles.emptyPlayerSlot}>
-                  <Text style={styles.emptyPlayerText}>Esperando jugador...</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {isHost && (
-            <View style={styles.hostControls}>
-              <Text style={styles.hostInstructions}>
-                {players.length < 2 ? `Invita a ${2 - players.length} jugador(es) más para comenzar` : '¡Todos están listos!'}
-              </Text>
-            </View>
-          )}
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.white} />
+          <Text style={styles.loadingText}>Conectando al servidor...</Text>
         </View>
       </LinearGradient>
     );
   }
 
-  return (
-    <LinearGradient colors={['#1E90FF', '#00BFFF']} style={styles.container}>
-      {!isConnected ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#FFFFFF" />
-          <Text style={styles.loadingText}>Conectando al servidor...</Text>
+  if (connectionStatus === 'error' || connectionStatus === 'disconnected') {
+    return (
+      <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>
+            {connectionStatus === 'error' ? 'Error de conexión' : 'Desconectado del servidor'}
+          </Text>
+          <Text style={styles.errorDescription}>
+            No se pudo conectar al servidor. Por favor, verifica tu conexión a internet e inténtalo de nuevo.
+          </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => router.replace('/quiz/main')}
+          >
+            <Text style={styles.retryButtonText}>Volver al inicio</Text>
+          </TouchableOpacity>
         </View>
-      ) : (
-        <View style={styles.container}>
-          {!roomCode.current ? (
-            <View style={styles.centered}>
-              <TouchableOpacity style={styles.button} onPress={() => {
-                const socket = socketRef.current;
-                if (socket) {
-                  const newRoomCode = generateRoomCode();
-                  roomCode.current = newRoomCode;
-                  socket.emit('createRoom', {
-                    roomCode: newRoomCode,
-                    maxPlayers: MAX_PLAYERS,
-                    playerId: playerIdRef.current,
-                    playerName: playerName.current
-                  });
-                  setIsHost(true);
-                }
-              }}>
-                <Text style={styles.buttonText}>Crear Sala</Text>
-              </TouchableOpacity>
+      </LinearGradient>
+    );
+  }
 
-              <View style={styles.divider} />
+  // Si está conectado pero no hay sala creada/unida, mostrar opciones de crear/unirse
+  if (!roomCode.current) {
+    return (
+      <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={leaveRoom} style={styles.backButton}>
+            <Text style={styles.backButtonText}>← Volver</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Competencia en Vivo</Text>
+          <View style={{ width: 80 }} />
+        </View>
 
-              <Text style={styles.sectionTitle}>O únete a una sala</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Código de sala"
-                value={roomCodeInput}
-                onChangeText={setRoomCodeInput}
-              />
+        <View style={styles.centered}>
+          <TouchableOpacity style={styles.button} onPress={() => {
+            const socket = socketRef.current;
+            if (socket) {
+              const newRoomCode = generateRoomCode();
+              roomCode.current = newRoomCode;
+              socket.emit('createRoom', {
+                roomCode: newRoomCode,
+                maxPlayers: MAX_PLAYERS,
+                playerId: playerIdRef.current,
+                playerName: playerName.current
+              });
+              setIsHost(true);
+            }
+          }}>
+            <Text style={styles.buttonText}>Crear Sala</Text>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <Text style={styles.sectionTitle}>O únete a una sala</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Código de sala"
+            value={roomCodeInput}
+            onChangeText={setRoomCodeInput}
+          />
+          <TouchableOpacity
+            style={[styles.button, !roomCodeInput && styles.buttonDisabled]}
+            onPress={() => {
+              const socket = socketRef.current;
+              if (socket && roomCodeInput) {
+                roomCode.current = roomCodeInput;
+                socket.emit('joinRoom', {
+                  roomCode: roomCodeInput,
+                  playerId: playerIdRef.current,
+                  playerName: playerName.current
+                });
+              }
+            }}
+            disabled={!roomCodeInput}
+          >
+            <Text style={styles.buttonText}>Unirse a Sala</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  // Si hay sala creada/unida, mostrar lobby
+  return (
+    <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={leaveRoom} style={styles.backButton}>
+          <Text style={styles.backButtonText}>← Volver</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Sala de Competencia</Text>
+        <View style={{ width: 80 }} />
+      </View>
+
+      <View style={styles.lobbyContainer}>
+        <View style={styles.roomCodeContainer}>
+          <Text style={styles.roomCodeTitle}>Código de Sala:</Text>
+          <TouchableOpacity style={styles.roomCodeButton} onPress={copyRoomCode}>
+            <Text style={styles.roomCodeText}>{roomCode.current || "Cargando..."}</Text>
+            <Text style={styles.copyIcon}>📋</Text>
+          </TouchableOpacity>
+          <Text style={styles.roomCodeHint}>(Toca para copiar)</Text>
+        </View>
+
+        <View style={styles.playersSection}>
+          <Text style={styles.playersTitle}>Jugadores ({players.length}/4):</Text>
+          <View style={styles.playersList}>
+            {players.length > 0 ? (
+              players.map((player) => (
+                <View key={player.id} style={[styles.playerItem, player.id === playerIdRef.current && styles.currentPlayerItem]}>
+                  <Text style={styles.playerName}>{player.name || "Jugador"} {player.isHost && '👑'}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noPlayers}>Esperando jugadores...</Text>
+            )}
+            {Array(MAX_PLAYERS - players.length).fill(0).map((_, index) => (
+              <View key={`empty-${index}`} style={styles.emptyPlayerSlot}>
+                <Text style={styles.emptyPlayerText}>Esperando jugador...</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {isHost && (
+          <View style={styles.hostControls}>
+            <Text style={styles.hostInstructions}>
+              {players.length >= 1 ? `¡Puedes iniciar la competencia con ${players.length} jugador(es)!` : `Invita a ${1 - players.length} jugador(es) más para comenzar`}
+            </Text>
+            {players.length >= 1 && (
               <TouchableOpacity
-                style={[styles.button, !roomCodeInput && styles.buttonDisabled]}
+                style={styles.startButton}
                 onPress={() => {
                   const socket = socketRef.current;
-                  if (socket && roomCodeInput) {
-                    roomCode.current = roomCodeInput;
-                    socket.emit('joinRoom', {
-                      roomCode: roomCodeInput,
-                      playerId: playerIdRef.current,
-                      playerName: playerName.current
+                  if (socket) {
+                    socket.emit('startCompetition', {
+                      roomCode: roomCode.current,
+                      playerId: playerIdRef.current
                     });
+                    setGameState('starting');
                   }
                 }}
-                disabled={!roomCodeInput}
               >
-                <Text style={styles.buttonText}>Unirse a Sala</Text>
+                <Text style={styles.startButtonText}>🚀 Iniciar Competencia</Text>
               </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.gameContainer}>
-              <View style={styles.roomCodeContainer}>
-                <Text style={styles.roomCodeTitle}>Código de la sala:</Text>
-                <Text style={styles.roomCodeStyle}>{roomCode.current}</Text>
-              </View>
-              <View style={styles.playersList}>
-                <Text style={styles.playersTitle}>Jugadores ({players.length}):</Text>
-                {players.map((player, index) => (
-                  <Text key={index} style={styles.playerName}>{player.name}</Text>
-                ))}
-              </View>
-            </View>
-          )}
-        </View>
-      )}
+            )}
+          </View>
+        )}
+      </View>
     </LinearGradient>
   );
 }
@@ -367,6 +388,8 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, paddingTop: Platform.OS === 'ios' ? 70 : 30, backgroundColor: 'rgba(0, 0, 0, 0.2)' },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF', textAlign: 'center', flex: 1 },
+  backButton: { backgroundColor: 'rgba(255, 255, 255, 0.2)', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, minWidth: 80, alignItems: 'center', justifyContent: 'center' },
+  backButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold' },
   smallButton: { backgroundColor: 'rgba(255, 255, 255, 0.2)', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, minWidth: 40, alignItems: 'center', justifyContent: 'center' },
   smallButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -395,11 +418,13 @@ const styles = StyleSheet.create({
   emptyPlayerText: { color: 'rgba(255, 255, 255, 0.5)', fontStyle: 'italic' },
   hostControls: { marginTop: 'auto', alignItems: 'center' },
   hostInstructions: { color: 'rgba(255, 255, 255, 0.9)', textAlign: 'center', marginBottom: 16, fontSize: 15, lineHeight: 22 },
+  startButton: { backgroundColor: '#28a745', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 25, marginTop: 10 },
+  startButtonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
   button: { backgroundColor: '#007AFF', padding: 15, borderRadius: 25, width: '80%', alignItems: 'center', marginVertical: 8 },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
   divider: { height: 1, backgroundColor: 'rgba(255, 255, 255, 0.3)', width: '80%', marginVertical: 15 },
   sectionTitle: { color: '#FFFFFF', fontSize: 16, marginBottom: 15 },
   input: { backgroundColor: 'rgba(255, 255, 255, 0.2)', color: '#FFFFFF', borderRadius: 8, padding: 15, width: '80%', marginBottom: 15, fontSize: 16 },
-  gameContainer: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' }
+  gameContainer: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' },
 });

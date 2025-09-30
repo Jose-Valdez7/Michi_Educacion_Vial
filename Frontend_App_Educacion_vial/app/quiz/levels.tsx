@@ -223,7 +223,7 @@ export default function QuizLevels() {
       {/* Back Button */}
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => router.back()}
+        onPress={() => router.push('/quiz/main' as Href)}
         activeOpacity={0.8}
       >
         <LinearGradient colors={colors.gradientSecondary} style={styles.backButtonGradient}>
