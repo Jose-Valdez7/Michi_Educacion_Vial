@@ -114,25 +114,22 @@ export default function RegisterScreen() {
             resizeMode="cover"
           />
         </View>
-        
-        {/* Tarjeta contenedora */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>CREAR CUENTA</Text>
+        <Text style={styles.title}>Crear cuenta</Text>
 
-          <View style={styles.form}>
+        <View style={styles.form}>
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Nombre completo</Text>
-            <TextInput style={styles.input} value={name} onChangeText={onChangeName} placeholder="Juan Pérez" placeholderTextColor={colors.gray} />
+            <TextInput style={styles.input} value={name} onChangeText={onChangeName} placeholder="Juan Pérez" placeholderTextColor="#ffffffcc" />
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}> Cédula (10 dígitos)</Text>
-            <TextInput style={styles.input} value={cedula} onChangeText={setCedula} placeholder="1234567890" keyboardType="number-pad" maxLength={10} placeholderTextColor={colors.gray} />
+            <Text style={styles.inputLabel}>Cédula (10 dígitos)</Text>
+            <TextInput style={styles.input} value={cedula} onChangeText={setCedula} placeholder="1234567890" keyboardType="number-pad" maxLength={10} placeholderTextColor="#ffffffcc" />
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}> Nacimiento (YYYY-MM-DD)</Text>
-            <TextInput style={styles.input} value={birthdate} onChangeText={onChangeBirthdate} placeholder="2015-05-01" keyboardType="number-pad" autoCapitalize="none" placeholderTextColor={colors.gray} />
+            <Text style={styles.inputLabel}>Nacimiento (YYYY-MM-DD)</Text>
+            <TextInput style={styles.input} value={birthdate} onChangeText={onChangeBirthdate} placeholder="2015-05-01" autoCapitalize="none" keyboardType="number-pad"  placeholderTextColor="#ffffffcc" />
           </View>
 
           <View style={styles.inputContainer}>
@@ -143,7 +140,7 @@ export default function RegisterScreen() {
               onChangeText={(v) => { setUsername(v); setUsernameDirty(true); }}
               placeholder="juanperez08"
               autoCapitalize="none"
-              placeholderTextColor={colors.gray}
+              placeholderTextColor="#ffffffcc"
             />
           </View>
 
@@ -165,9 +162,8 @@ export default function RegisterScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => router.replace('/(auth)/login' as Href)} style={{ marginTop: 12, alignSelf: 'center' }}>
-            <Text style={{ color: '#000000', textDecorationLine: 'underline' }}>Ya tengo cuenta</Text>
+            <Text style={{ color: colors.white, textDecorationLine: 'underline' }}>Ya tengo cuenta</Text>
           </TouchableOpacity>
-          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -179,17 +175,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', paddingHorizontal: 10, backgroundColor: colors.loginBackground },
   bgContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', backgroundColor: colors.loginBackground },
   bgImage: { position: 'absolute', width: '100%', height: height + 2 },
-  card: { width: '100%', maxWidth: 420, backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: 18, paddingVertical: 18, paddingHorizontal: 16, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8, marginTop: height * 0.05, marginBottom: height * 0.05 },
-  cardTitle: { textAlign: 'center', color: '#000000', fontSize: 22, fontWeight: '800', marginBottom: 8 },
-  form: { backgroundColor: 'transparent', width: '100%', maxWidth: 400, alignSelf: 'center' },
+  title: { color: colors.white, fontSize: width < 400 ? 26 : 32, fontWeight: 'bold', textAlign: 'center', marginBottom: 16, textShadowColor: colors.shadowDark as any, textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 4 },
+  form: { backgroundColor: 'rgba(128,128,128,0.9)', width: '100%', maxWidth: 400, alignSelf: 'center', padding: width < 400 ? 14 : 18, borderRadius: width < 400 ? 18 : 22, shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 6, elevation: 10 },
   inputContainer: { marginBottom: height < 700 ? 15 : 20 },
-  inputLabel: { color: '#000000', fontWeight: '600', marginBottom: 6, fontSize: width < 400 ? 14 : 16 },
-  input: { backgroundColor: colors.white, borderRadius: width < 400 ? 20 : 25, paddingHorizontal: width < 400 ? 15 : 20, paddingVertical: width < 400 ? 12 : 15, color: colors.textMuted, shadowColor: colors.shadow as any, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2.5, elevation: 3, minHeight: width < 400 ? 45 : 50, fontSize: width < 400 ? 14 : 16 },
+  inputLabel: { color: colors.white, fontWeight: '700', marginBottom: 6, fontSize: width < 400 ? 14 : 16 },
+  input: { backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: width < 400 ? 20 : 25, paddingHorizontal: width < 400 ? 15 : 20, paddingVertical: width < 400 ? 12 : 15, color: colors.white, shadowColor: colors.shadow as any, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2.5, elevation: 3, minHeight: width < 400 ? 45 : 50, fontSize: width < 400 ? 14 : 16 },
   sexRow: { flexDirection: 'row', gap: 8 },
-  sexPill: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.1)' },
-  sexPillActive: { backgroundColor: 'rgba(0,0,0,0.2)', shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 4 },
-  sexText: { color: '#000000' },
-  sexTextActive: { color: '#000000', fontWeight: '700' },
+  sexPill: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.25)' },
+  sexPillActive: { backgroundColor: 'rgba(255,255,255,0.4)', shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 4 },
+  sexText: { color: colors.white },
+  sexTextActive: { color: colors.white, fontWeight: '800' },
   submitBtn: { marginTop: height < 700 ? 10 : 14, borderRadius: width < 400 ? 20 : 25, overflow: 'hidden', shadowColor: colors.shadowDark as any, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4.65, elevation: 8 },
   buttonGradient: { paddingVertical: width < 400 ? 15 : 18, alignItems: 'center' },
   buttonText: { color: colors.white, fontWeight: 'bold', fontSize: width < 400 ? 16 : 18 },

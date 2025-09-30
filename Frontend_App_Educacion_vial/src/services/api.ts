@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-const DEFAULT_BASE_URL = 'http://192.168.68.117:3002';
+const DEFAULT_BASE_URL = 'http://localhost:5499';
 
 export class ApiClient {
   private baseUrl: string;
