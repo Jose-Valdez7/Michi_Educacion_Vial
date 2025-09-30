@@ -12,7 +12,6 @@ export const colors = {
   textWhite: '#FFFFFF',
   textAccent: '#8B5CF6',
   textMuted: '#4B5563',
-
   buttonPrimary: '#6366F1',
   buttonSecondary: '#A78BFA',
   buttonAccent: '#8B5CF6',
@@ -28,15 +27,19 @@ export const colors = {
   gray: '#9CA3AF',
   lightGray: '#F3F4F6',
   shadow: 'rgba(99, 102, 241, 0.1)',
-  shadowDark: 'rgba(99, 102, 241, 0.3)',
-  gradientPrimary: ['#6366F1', '#A78BFA'] as const,
-  gradientPrimaryLight: ['#EB4E02', '#FD935D'] as const,
+  shadowDark: 'rgba(118, 120, 212, 0.3)',
+  gradientPrimary: ['#F59E0B', '#EF4444'] as const,
+  gradientPrimaryLight: ['#F25233', '#ED664C'] as const,
   gradientSecondary: ['#A78BFA', '#C4B5FD'] as const,
   gradientAccent: ['#8B5CF6', '#A78BFA'] as const,
   gradientBackground: ['#FFFFFF', '#F8FAFC'] as const,
   gradientSuccess: ['#10B981', '#34D399'] as const,
   gradientWarning: ['#F59E0B', '#FBBF24'] as const,
-  
+  gradiantGreen: ['#10B981', '#34D399'] as const,
+  gradientVialGreen: ['#16A34A', '#22C55E'] as const,   // Verde semáforo
+  gradientVialYellow: ['#FACC15', '#FDE047'] as const, // Amarillo semáforo
+  gradientVialOrange: ['#F97316', '#FB923C'] as const, // Naranja tránsito
+
   // Tema vial (para login)
   asphalt: '#2E2E2E',
   roadYellow: '#F5D142',
