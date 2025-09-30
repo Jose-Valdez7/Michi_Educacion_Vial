@@ -3,7 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "node start-direct.js",
+    "start": "node start-simple.js",
     "dev": "node start-direct.js",
     "server": "node competition-server.js",
     "expo": "npx expo start --clear",

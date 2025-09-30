@@ -99,19 +99,17 @@ Códigos únicos: 6 caracteres alfanuméricos
 - **Aplicación corriendo** en dispositivo host
 
 ### **✅ URLs Configuradas:**
-```javascript
 // Desarrollo (automático)
 const SERVER_URL = 'http://localhost:3003'
 
 // Producción (IP fija)
-const SERVER_URL = 'http://192.168.68.117:3003'
+// const SERVER_URL = 'http://192.168.68.117:3003'
+
 ### **❌ Si no funciona la conexión:**
 1. **Verificar que ambos dispositivos** estén en la misma red WiFi
 2. **Asegurarse de que** la aplicación se inició con `npm start`
 3. **Revisar consola** para errores del servidor
 4. **Probar health check:** `http://localhost:3003/health`
-
-### **❌ Si el servidor no inicia:**
 ```bash
 # Verificar instalación de dependencias
 npm install
@@ -120,14 +118,14 @@ npm install
 npm start --reset-cache
 
 # Probar servidor directamente
-node app/services/competition-server.js
+node competition-server.js
 ```
 
 ### **❌ Si hay errores de WebSocket:**
 1. **Cerrar aplicación** completamente
 2. **Reiniciar con** `npm start`
 3. **Verificar que el servidor** esté corriendo primero
-4. **Esperar** a que aparezca "Servidor móvil corriendo en puerto 3002"
+4. **Esperar** a que aparezca "Servidor móvil corriendo en puerto 3003"
 
 ---
 
@@ -135,8 +133,8 @@ node app/services/competition-server.js
 
 ### **✅ Nuevos archivos:**
 ```javascript
-app/services/competition-server.js  // Servidor integrado optimizado
-start-integrated.js                  // Script para iniciar ambos procesos
+app/quiz/competition.tsx           // Cliente Socket.IO actualizado
+start-direct.js                     // Script para iniciar ambos procesos
 ```
 
 ### **✅ Archivos modificados:**
