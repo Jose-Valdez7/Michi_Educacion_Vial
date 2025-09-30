@@ -223,12 +223,10 @@ export default function QuizLevels() {
       {/* Back Button */}
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => router.back()}
+        onPress={() => router.replace('/minigames/level1' as Href)}
         activeOpacity={0.8}
       >
-        <LinearGradient colors={colors.gradientSecondary} style={styles.backButtonGradient}>
-          <Text style={styles.backButtonText}>← Volver</Text>
-        </LinearGradient>
+        <Image source={require('../../assets/images/btn-volver.png')} style={{ width: 96, height: 84 }} resizeMode="contain" />
       </TouchableOpacity>
     </LinearGradient>
   );

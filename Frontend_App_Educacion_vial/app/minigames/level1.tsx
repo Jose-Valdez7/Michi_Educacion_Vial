@@ -74,8 +74,11 @@ export default function MinigamesLevel1() {
           resizeMode="cover"
         />
       </View>
+      <StarsRow completed={completedActivities} />
 
-      <TouchableOpacity onPress={() => router.back()} activeOpacity={0.85} style={styles.backBtn}>
+      <View style={{ height: 12 }} />
+
+      <TouchableOpacity onPress={() => router.replace('/welcome' as Href)} activeOpacity={0.85} style={styles.backBtn}>
         <Image source={require('../../assets/images/btn-volver.png')} style={styles.backImg} resizeMode="contain" />
       </TouchableOpacity>
 
@@ -141,19 +144,38 @@ const styles = StyleSheet.create({
   bgImage: { position: 'absolute', width: width, height: '100%', opacity: 1 },
   backBtn: { position: 'absolute', top: 20, left: 16, zIndex: 10 },
   backImg: { width: 96, height: 84 },
+  starsContainer: {
+    position: 'absolute',
+    top: 40,
+    right: 16,
+    zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.lightWhite,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    shadowColor: colors.shadowDark as any,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6
+  },
+  starText: { fontSize: 24 },
   titleImage: { width: width * 0.48, height: 64, alignSelf: 'center', marginTop: 30, marginBottom: 6 },
   title: { fontSize: 20, fontWeight: 'bold', color: colors.white, textAlign: 'center' },
   subtitle: { textAlign: 'center', color: colors.white, opacity: 0.9, marginTop: 2, fontSize: width < 400 ? 13 : 15 },
   // Cards base
-  card: { 
-    borderRadius: 14, 
-    overflow: 'hidden', 
-    marginTop: 11, 
-    shadowColor: colors.shadowDark as any, 
-    shadowOffset: { width: 0, height: 5 }, 
-    shadowOpacity: 0.29, 
-    shadowRadius: 5.5, 
-    elevation: 9 
+  card: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginTop: 11,
+    shadowColor: colors.shadowDark as any,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.29,
+    shadowRadius: 5.5,
+    elevation: 9
   },
   // Column split (normal)
   cardInnerColumn: { flexDirection: 'column', alignItems: 'stretch', minHeight: 135 },
@@ -174,3 +196,13 @@ const styles = StyleSheet.create({
   cardBottomLargeYellow: { backgroundColor: colors.gradientVialYellow[0], paddingVertical: 13, paddingHorizontal: 13 },
   cardBottomLargeOrange: { backgroundColor: colors.gradientVialOrange[0], paddingVertical: 13, paddingHorizontal: 13 },
 });
+
+function StarsRow({ completed }: { completed: Record<string, boolean> }) {
+  const count = (completed.coloring ? 1 : 0) + (completed.quiz ? 1 : 0) + (completed.bicycle ? 1 : 0);
+  return (
+    <View style={styles.starsContainer}>
+      {[1, 2, 3].map((i) => (
+        <Text key={i} style={styles.starText}>{i <= count ? '⭐' : '☆'}</Text>
+      ))}
+    </View>
+  );}
