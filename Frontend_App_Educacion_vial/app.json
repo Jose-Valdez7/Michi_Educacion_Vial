@@ -40,14 +40,15 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": false
     },
     "extra": {
-      "API_BASE_URL": "http://192.168.68.117:3002"
+      "API_BASE_URL": "http://192.168.68.123:3002"
     }
   }
 }

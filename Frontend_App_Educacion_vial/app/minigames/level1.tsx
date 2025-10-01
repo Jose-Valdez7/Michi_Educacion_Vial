@@ -26,9 +26,9 @@ export default function MinigamesLevel1() {
         const list: string[] = Array.isArray(p.completedGames) ? p.completedGames : [];
 
         setCompletedActivities({
-          coloring: list.includes('1_coloring') || list.includes('1_6'),
+          coloring: list.includes('1_colorear_divertidamente') || list.includes('1_6'),
           quiz: list.includes('1_quiz_vial') || list.includes('1_1'),
-          bicycle: list.includes('1_bicycle') || list.includes('1_2')
+          bicycle: list.includes('1_paseo_bici') || list.includes('1_2')
         });
       } catch (e) {
         // Error loading completed activities
@@ -96,6 +96,11 @@ export default function MinigamesLevel1() {
           <View style={styles.cardBottomLargeGreen}>
             <Text style={styles.cardTitleLarge}>Colorear divertidamente</Text>
             <Text style={styles.cardDescLarge}>Colorea y aprende</Text>
+            {completedActivities.coloring && (
+              <View style={styles.starContainer}>
+                <Text style={styles.starText}>⭐</Text>
+              </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -112,6 +117,11 @@ export default function MinigamesLevel1() {
           <View style={styles.cardBottomLargeYellow}>
             <Text style={styles.cardTitleLarge}>Quiz Vial</Text>
             <Text style={styles.cardDescLarge}>Pon a prueba tus conocimientos</Text>
+            {completedActivities.quiz && (
+              <View style={styles.starContainer}>
+                <Text style={styles.starText}>⭐</Text>
+              </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -128,6 +138,11 @@ export default function MinigamesLevel1() {
           <View style={styles.cardBottomLargeOrange}>
             <Text style={styles.cardTitleLarge}>Aventura en Bicicleta</Text>
             <Text style={styles.cardDescLarge}>Evita obstáculos y responde preguntas</Text>
+            {completedActivities.bicycle && (
+              <View style={styles.starContainer}>
+                <Text style={styles.starText}>⭐</Text>
+              </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -173,4 +188,6 @@ const styles = StyleSheet.create({
   cardBottomLargeGreen: { backgroundColor: colors.gradientVialGreen[0], paddingVertical: 13, paddingHorizontal: 13 },
   cardBottomLargeYellow: { backgroundColor: colors.gradientVialYellow[0], paddingVertical: 13, paddingHorizontal: 13 },
   cardBottomLargeOrange: { backgroundColor: colors.gradientVialOrange[0], paddingVertical: 13, paddingHorizontal: 13 },
+  starContainer: { alignItems: 'center', marginTop: 8 },
+  starText: { fontSize: 24, color: '#FFD700' },
 });
