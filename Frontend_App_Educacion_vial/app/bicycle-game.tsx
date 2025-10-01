@@ -670,7 +670,7 @@ export default function BicycleGameScreen() {
         >
           {/* Opción 2A: Imagen personalizada (descomenta si tienes la imagen) */}
           <Image 
-            source={require('../assets/images/bici.png')} 
+            source={require('../assets/images/bici-juego.png')} 
             style={styles.playerImage} 
             resizeMode="contain" 
           />
