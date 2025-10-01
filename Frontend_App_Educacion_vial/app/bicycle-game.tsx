@@ -510,6 +510,13 @@ export default function BicycleGameScreen() {
   if (gameState === GameState.Menu) {
     return (
       <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
+        <TouchableOpacity 
+          onPress={() => router.replace('/minigames/level1' as Href)} 
+          style={styles.backTopBtn} 
+          activeOpacity={0.85}
+        >
+          <Image source={require('../assets/images/btn-volver.png')} style={styles.backImg} resizeMode="contain" />
+        </TouchableOpacity>
         <View style={styles.menuContainer}>
           <Text style={styles.gameTitle}>🚴 Aventura en Bicicleta</Text>
           <Text style={styles.gameSubtitle}>
@@ -528,12 +535,7 @@ export default function BicycleGameScreen() {
             <Text style={styles.startButtonText}>Comenzar Juego</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => router.replace('/minigames/level1' as Href)}
-          >
-            <Text style={styles.backButtonText}>Volver</Text>
-          </TouchableOpacity>
+          
         </View>
       </LinearGradient>
     );
@@ -556,8 +558,16 @@ export default function BicycleGameScreen() {
             <Text style={styles.startButtonText}>Jugar de Nuevo</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.backButton} onPress={resetGame}>
-            <Text style={styles.backButtonText}>Menú Principal</Text>
+          <TouchableOpacity 
+            onPress={() => {
+              resetGame();
+              router.replace('/minigames/level1' as Href);
+            }}
+            style={{ marginTop: 10 }}
+          >
+            <LinearGradient colors={colors.gradientSecondary} style={{ paddingVertical: 12, paddingHorizontal: 24, borderRadius: 20 }}>
+              <Text style={{ color: colors.white, fontWeight: '700' }}>Volver al Nivel 1</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -660,7 +670,7 @@ export default function BicycleGameScreen() {
         >
           {/* Opción 2A: Imagen personalizada (descomenta si tienes la imagen) */}
           <Image 
-            source={require('../assets/images/bici.png')} 
+            source={require('../assets/images/bici-juego.png')} 
             style={styles.playerImage} 
             resizeMode="contain" 
           />
@@ -784,6 +794,8 @@ export default function BicycleGameScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  backTopBtn: { position: 'absolute', top: 20, left: 16, zIndex: 20 },
+  backImg: { width: 96, height: 84 },
   
   // Menu Styles
   menuContainer: {
@@ -835,17 +847,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  backButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 20,
-  },
-  backButtonText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '600',
   },
 
   // Game Over Styles

@@ -65,18 +65,13 @@ export default function ImagesMenu() {
 
   return (
     <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
-      <TouchableOpacity onPress={() => router.push('/minigames/level1' as Href)} style={styles.backBtn} activeOpacity={0.85}>
-        <LinearGradient colors={colors.gradientSecondary} style={styles.backGradient}>
-          <Text style={styles.backText}>← Volver</Text>
-        </LinearGradient>
+      <TouchableOpacity onPress={() => router.replace('/minigames/level1' as Href)} style={styles.backBtn} activeOpacity={0.85}>
+        <Image source={require('../../assets/images/btn-volver.png')} style={styles.backImg} resizeMode="contain" />
       </TouchableOpacity>
 
       <Text style={styles.title}>🎨 Colorear Divertidamente</Text>
       <Text style={styles.subtitle}>Elige una imagen para colorear y crear tu obra de arte</Text>
 
-      <View style={styles.mascotWrap}>
-        <Image source={require('../../assets/images/pintor.png')} style={styles.painterImage} resizeMode="contain" />
-      </View>
 
       {/* Estrellas de progreso del set (3 tareas) */}
       <StarsRow completed={completed} />
@@ -117,10 +112,9 @@ export default function ImagesMenu() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 48 },
-  backBtn: { marginBottom: 12, borderRadius: 16, overflow: 'hidden', alignSelf: 'flex-start' },
-  backGradient: { paddingVertical: 8, paddingHorizontal: 12 },
-  backText: { color: colors.white, fontWeight: '700' },
+  container: { flex: 1, padding: 20, paddingTop: 90 },
+  backBtn: { position: 'absolute', top: 20, left: 16, zIndex: 10 },
+  backImg: { width: 96, height: 84 },
   title: { fontSize: width < 400 ? 24 : 28, fontWeight: 'bold', color: colors.white, textAlign: 'left' },
   subtitle: { fontSize: width < 400 ? 14 : 16, color: colors.white, opacity: 0.9, marginTop: 4 },
   mascotWrap: { alignItems: 'center', marginVertical: 12 },
