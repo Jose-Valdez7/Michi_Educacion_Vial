@@ -12,13 +12,11 @@ export default function QuizLearning() {
     <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
       {/* Back Button - Top Left */}
       <TouchableOpacity 
-        onPress={() => router.push('/quiz/main' as Href)} 
+        onPress={() => router.replace('/minigames/level1' as Href)} 
         style={styles.backBtn} 
         activeOpacity={0.85}
       >
-        <LinearGradient colors={colors.gradientSecondary} style={styles.backGradient}>
-          <Text style={styles.backText}>← Volver</Text>
-        </LinearGradient>
+        <Image source={require('../../assets/images/btn-volver.png')} style={styles.backImg} resizeMode="contain" />
       </TouchableOpacity>
 
       <View style={styles.header}> 
@@ -63,23 +61,11 @@ const styles = StyleSheet.create({
   // Back button styles
   backBtn: { 
     position: 'absolute',
-    top: 45,
-    left: 20,
+    top: 20,
+    left: 16,
     zIndex: 10,
-    borderRadius: 16,
-    overflow: 'hidden',
-    width: 110,
   },
-  backGradient: { 
-    paddingVertical: 8, 
-    paddingHorizontal: 12,
-    alignItems: 'center',
-  },
-  backText: { 
-    color: colors.white, 
-    fontWeight: '700',
-    fontSize: 14,
-  },
+  backImg: { width: 96, height: 84 },
   // Header content
   header: { 
     alignItems: 'center', 
