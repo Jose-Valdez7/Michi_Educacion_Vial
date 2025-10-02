@@ -198,19 +198,11 @@ export default function QuizPlay() {
 
         if (finalScore === levelQuestions.length && failedQuestions.size === 0) {
           // ✅ Completó todas las 5 preguntas correctamente
-          console.log('=== DEBUG Quiz Completion ===');
-          console.log('Level ID:', levelId);
-          console.log('Final Score:', finalScore);
-          console.log('Questions Length:', levelQuestions.length);
-          console.log('Failed Questions:', failedQuestions.size);
-
           await QuizProgressService.completeLevel(levelId, finalScore);
 
           // ✅ Guardar progreso global de juegos completados (solo para nivel difícil)
           if (levelId === 'hard') {
-            console.log('=== DEBUG Awarding Quiz Level 1 Completion ===');
             await awardQuizLevel1Completion(10);
-            console.log('=== END DEBUG Quiz Completion ===');
           }
 
           Alert.alert(

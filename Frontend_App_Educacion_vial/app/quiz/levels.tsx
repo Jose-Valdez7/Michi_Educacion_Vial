@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/utils/colors';
 import { useRouter, type Href } from 'expo-router';
@@ -11,6 +11,15 @@ const { width, height } = Dimensions.get('window');
 export default function QuizLevels() {
   const router = useRouter();
   const [progress, setProgress] = useState<QuizProgress | null>(null);
+  const [levelStatuses, setLevelStatuses] = useState<{
+    easy: { unlocked: boolean; completed: boolean; score: number };
+    medium: { unlocked: boolean; completed: boolean; score: number };
+    hard: { unlocked: boolean; completed: boolean; score: number };
+  }>({
+    easy: { unlocked: true, completed: false, score: 0 },
+    medium: { unlocked: false, completed: false, score: 0 },
+    hard: { unlocked: false, completed: false, score: 0 },
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,53 +29,38 @@ export default function QuizLevels() {
   const loadProgress = async () => {
     try {
       const quizProgress = await QuizProgressService.getProgress();
-      setProgress(quizProgress);
+
+      // Verificar datos corruptos (si todos los niveles están completados)
+      if (quizProgress.easy.completed && quizProgress.medium.completed && quizProgress.hard.completed) {
+        console.log('🚨 Datos corruptos detectados - reseteando...');
+        await QuizProgressService.resetProgress();
+        // Recargar después del reset
+        const cleanProgress = await QuizProgressService.getProgress();
+        setProgress(cleanProgress);
+      } else {
+        setProgress(quizProgress);
+      }
+
+      // Cargar estados de todos los niveles
+      const easyStatus = await QuizProgressService.getLevelStatus('easy');
+      const mediumStatus = await QuizProgressService.getLevelStatus('medium');
+      const hardStatus = await QuizProgressService.getLevelStatus('hard');
+
+      setLevelStatuses({
+        easy: easyStatus,
+        medium: mediumStatus,
+        hard: hardStatus,
+      });
     } catch (error) {
-      
+      console.error('❌ Error loading quiz progress:', error);
+      // Estado por defecto en caso de error
+      setLevelStatuses({
+        easy: { unlocked: true, completed: false, score: 0 },
+        medium: { unlocked: false, completed: false, score: 0 },
+        hard: { unlocked: false, completed: false, score: 0 },
+      });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getLevelStatus = (levelId: 'easy' | 'medium' | 'hard') => {
-    if (!progress) return { unlocked: false, completed: false, score: 0 };
-
-    switch (levelId) {
-      case 'easy':
-        return {
-          unlocked: true,
-          completed: progress.easy.completed,
-          score: progress.easy.score
-        };
-      case 'medium':
-        return {
-          unlocked: progress.medium.unlocked || progress.easy.completed,
-          completed: progress.medium.completed,
-          score: progress.medium.score
-        };
-      case 'hard':
-        return {
-          unlocked: progress.hard.unlocked || progress.medium.completed,
-          completed: progress.hard.completed,
-          score: progress.hard.score
-        };
-      default:
-        return { unlocked: false, completed: false, score: 0 };
-    }
-  };
-
-  const getLockMessage = (levelId: 'easy' | 'medium' | 'hard') => {
-    if (!progress) return '';
-
-    switch (levelId) {
-      case 'easy':
-        return '';
-      case 'medium':
-        return progress.easy.completed ? '' : 'Completa el Nivel Fácil para desbloquear';
-      case 'hard':
-        return progress.medium.completed ? '' : 'Completa el Nivel Medio para desbloquear';
-      default:
-        return '';
     }
   };
 
@@ -104,7 +98,7 @@ export default function QuizLevels() {
   ];
 
   const handleStartQuiz = async (levelId: 'easy' | 'medium' | 'hard') => {
-    const status = getLevelStatus(levelId);
+    const status = levelStatuses[levelId];
 
     if (status.unlocked) {
       router.push(`/quiz/play?level=${levelId}` as Href);
@@ -141,8 +135,7 @@ export default function QuizLevels() {
         style={styles.scrollView}
       >
         {levels.map((level, index) => {
-          const status = getLevelStatus(level.id);
-          const lockMessage = getLockMessage(level.id);
+          const status = levelStatuses[level.id];
           const isLocked = !status.unlocked;
 
           return (
@@ -178,7 +171,11 @@ export default function QuizLevels() {
                   {isLocked ? (
                     <View style={styles.lockOverlay}>
                       <Text style={styles.lockIcon}>🔒</Text>
-                      <Text style={styles.lockMessage}>{lockMessage}</Text>
+                      <Text style={styles.lockMessage}>
+                        {level.id === 'easy' ? '' :
+                         level.id === 'medium' ? 'Completa el Nivel Fácil para desbloquear' :
+                         'Completa el Nivel Medio para desbloquear'}
+                      </Text>
                     </View>
                   ) : (
                     <View style={styles.levelStats}>
@@ -236,7 +233,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 50,
+    paddingTop: 70,
   },
   header: {
     alignItems: 'center',
@@ -257,6 +254,18 @@ const styles = StyleSheet.create({
     color: colors.white,
     textAlign: 'center',
     opacity: 0.9,
+  },
+  completionBadge: {
+    backgroundColor: 'rgba(76, 175, 80, 0.9)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  completionText: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
@@ -348,14 +357,10 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 50,
+    top: 35,
     left: 20,
     borderRadius: 12,
     overflow: 'hidden',
-  },
-  backButtonGradient: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -366,18 +371,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: colors.white,
     fontWeight: '600',
-  },
-  completionBadge: {
-    backgroundColor: 'rgba(76, 175, 80, 0.9)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginTop: 8,
-  },
-  completionText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: 'bold',
   },
   lockedIcon: {
     opacity: 0.6,
@@ -423,10 +416,5 @@ const styles = StyleSheet.create({
   },
   lockedButtonText: {
     color: '#999999',
-  },
-  backButtonText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: '600',
   },
 });

@@ -16,19 +16,59 @@ export default function Welcome() {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<any | null>(null);
   const [userName, setUserName] = useState<string>('Amigo');
+  const [greeting, setGreeting] = useState<string>('¡Bienvenido');
 
-  const completedStars = (completedGames: string[], level: number): number => {
+  const calculatePointsForLevel = (completedGames: string[], level: number): number => {
     if (!completedGames) return 0;
-    const levelPrefix = `${level}_`;
-    const levelGames = completedGames.filter(game => game.startsWith(levelPrefix));
-    // Count unique game completions (e.g., '1_game1', '1_game2', etc.)
-    const uniqueGames = new Set(levelGames.map(game => {
-      const parts = game.split('_');
-      return parts.length > 1 ? parts[1] : '';
-    }));
-    // Remove empty strings and count
-    uniqueGames.delete('');
-    return uniqueGames.size;
+
+    // Definir las actividades por nivel y sus puntos individuales
+    const levelActivities = {
+      1: {
+        activities: ['1_quiz_vial', '1_colorear_divertidamente', '1_paseo_bici'],
+        totalPoints: 25,
+        pointsPerActivity: 25 / 3 // ~8.33 puntos por actividad
+      },
+      2: {
+        activities: ['2_quiz_vial', '2_colorear_divertidamente', '2_paseo_bici'],
+        totalPoints: 25,
+        pointsPerActivity: 25 / 3
+      },
+      3: {
+        activities: ['3_quiz_vial', '3_colorear_divertidamente', '3_paseo_bici'],
+        totalPoints: 25,
+        pointsPerActivity: 25 / 3
+      }
+    };
+
+    const levelConfig = levelActivities[level as keyof typeof levelActivities];
+    if (!levelConfig) return 0;
+
+    // Contar cuántas actividades del nivel están completadas
+    const completedCount = levelConfig.activities.filter(activity =>
+      completedGames.includes(activity)
+    ).length;
+
+    // Calcular puntos totales para este nivel
+    const levelPoints = Math.round((levelConfig.pointsPerActivity * completedCount) * 100) / 100;
+
+    return levelPoints;
+  };
+
+  const getStarsForLevel = (completedGames: string[], level: number): number => {
+    const levelPoints = calculatePointsForLevel(completedGames, level);
+    const pointsPerStar = 25 / 3; // ~8.33 puntos por estrella
+    return Math.floor((levelPoints / pointsPerStar) + 0.5); // Redondear al número de estrellas más cercano
+  };
+
+  const calculateTotalPoints = (completedGames: string[]): number => {
+    let totalPoints = 0;
+
+    // Calcular puntos para cada nivel
+    for (let level = 1; level <= 3; level++) {
+      totalPoints += calculatePointsForLevel(completedGames, level);
+    }
+
+    return Math.round(totalPoints * 100) / 100;
   };
 
   useEffect(() => {
@@ -58,19 +98,29 @@ export default function Welcome() {
         const p = await ProgressApi.get();
         setProgress(p);
 
-        // Check if level 1 is completed (3 stars)
-        const level1Stars = completedStars(p.completedGames, 1);
+        // Calcular puntos reales basados en actividades completadas
+        const calculatedPoints = calculateTotalPoints(p.completedGames);
+        const currentPoints = p.points || 0;
 
-        if (level1Stars === 3) {
-          const hasReceivedPoints = p.completedGames.includes('1_level_completed_bonus');
+        // Si hay discrepancia entre puntos calculados y puntos actuales, actualizar
+        if (Math.abs(calculatedPoints - currentPoints) > 0.01) {
+          await ProgressApi.update({
+            points: calculatedPoints
+          });
 
-          if (!hasReceivedPoints) {
-            const newPoints = (p.points || 0) + 25;
-            const newCompletedGames = [...p.completedGames, '1_level_completed_bonus'];
+          // Recargar progreso actualizado
+          const updatedProgress = await ProgressApi.get();
+          setProgress(updatedProgress);
+        }
 
+        // Check if level 2 should be unlocked (level 1 has 3 activities completed)
+        const level1Stars = getStarsForLevel(p.completedGames, 1);
+
+        if (level1Stars >= 3) {
+          const shouldUnlockLevel2 = !p.unlockedLevels?.includes(2);
+          if (shouldUnlockLevel2) {
             await ProgressApi.update({
-              points: newPoints,
-              completedGames: newCompletedGames
+              unlockedLevels: [...(p.unlockedLevels || [1]), 2]
             });
 
             const updatedProgress = await ProgressApi.get();
@@ -78,14 +128,23 @@ export default function Welcome() {
           }
         }
 
-        // Get user's first name
+        // Get user's first name and determine greeting based on gender
         let firstName = 'Amigo';
+        let currentGreeting = '¡Bienvenido';
+
         if (session.childName) {
           firstName = session.childName.split(' ')[0];
         } else if (session.childId) {
           firstName = session.childId.split('-')[0];
         }
+
+        // Determine greeting based on gender
+        if (session.childSex === 'FEMALE') {
+          currentGreeting = '¡Bienvenida';
+        }
+
         setUserName(firstName);
+        setGreeting(currentGreeting);
       } catch (error) {
         console.error('Error loading user data:', error);
       } finally {
@@ -143,7 +202,7 @@ export default function Welcome() {
             <View style={styles.welcomeRow}>
               <View style={styles.welcomeCard}>
                 <Image source={require('../assets/images/gatoLogo.png')} style={styles.welcomeCatImage} resizeMode="contain" />
-                <Text style={styles.welcomeText}>¡Bienvenido, {userName}!</Text>
+                <Text style={styles.welcomeText}>{greeting}, {userName}!</Text>
               </View>
             </View>
             <View style={[styles.statPill, { marginRight: 8 }]}>
@@ -175,7 +234,7 @@ export default function Welcome() {
               const isUnlocked = progress.unlockedLevels?.includes(lvl) ?? (lvl === 1);
               const isLocked = !isUnlocked;
 
-              const level1Stars = completedStars(progress.completedGames, 1);
+              const level1Stars = getStarsForLevel(progress.completedGames, 1);
               const shouldUnlockLevel2 = lvl === 2 && level1Stars === 3 && !isUnlocked;
 
               return (
@@ -187,7 +246,7 @@ export default function Welcome() {
                           {[1, 2, 3].map((n) => (
                             <Text key={n} style={styles.starText}>
                               {(() => {
-                                const starsForLevel = completedStars(progress.completedGames, lvl);
+                                const starsForLevel = getStarsForLevel(progress.completedGames, lvl);
                                 return starsForLevel >= n ? '⭐' : '☆';
                               })()}
                             </Text>
@@ -325,7 +384,14 @@ const styles = StyleSheet.create({
   header: { marginBottom: 20 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   welcomeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', paddingHorizontal: 4 },
-  welcomeText: { fontSize: width < 400 ? 22 : 28, fontWeight: 'bold', color: '#000000', marginRight: 8 },
+  welcomeText: {
+    color: 'black',
+    fontSize: width < 400 ? 22 : 28,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+  },
   welcomeCatImage: { width: width < 400 ? 35 : 40, height: width < 400 ? 35 : 40 },
   settingsButton: { backgroundColor: 'rgba(255, 255, 255, 0.2)', padding: 10, borderRadius: 20, minWidth: 40, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
   settingsIcon: { color: '#FFFFFF', fontSize: 20, fontWeight: 'bold' },
@@ -344,7 +410,7 @@ const styles = StyleSheet.create({
   islandHeaderArea: { alignItems: 'center', flex: 1, justifyContent: 'flex-start', zIndex: 1 },
   islandImage: { width: width * 0.55, height: width * 0.55, marginBottom: 1, marginTop: 0.25 },
   titleImage: { width: width * 0.4, height: 60, alignSelf: 'center', marginBottom: 5 },
-  starsBackground: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 7 },
+  starsBackground: { backgroundColor: 'rgba(189, 89, 22, 0.2)', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 7 },
   starsContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   starText: { fontSize: 20, marginHorizontal: 3 },
   islandButtonContainer: { zIndex: 1, marginTop: 20 },
@@ -371,4 +437,15 @@ const styles = StyleSheet.create({
   modalLogoutText: { color: '#FFFFFF' },
   modalCancelOption: { backgroundColor: '#f0f0f0' },
   modalCancelText: { fontSize: 18, color: '#666', fontWeight: '500' },
-  welcomeCard: { backgroundColor: 'rgba(255, 215, 0, 0.3)'}})
+  welcomeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.3)',
+    borderRadius: 20,
+    padding: 8,
+    paddingHorizontal: 16,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+});

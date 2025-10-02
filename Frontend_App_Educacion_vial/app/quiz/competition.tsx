@@ -24,7 +24,7 @@ const colors = {
   gradientSecondary: ['#FF6B6B', '#FF8E53'] as const
 };
 
-const SERVER_URL = __DEV__ ? 'http://192.168.68.123:3003' : 'http://localhost:3003';
+const SERVER_URL = __DEV__ ? 'http://192.168.68.122:3003' : 'http://localhost:3003';
 const MAX_PLAYERS = 4;
 
 interface Player {
@@ -49,7 +49,21 @@ export default function CompetitionScreen() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isHost, setIsHost] = useState(false);
   const [gameState, setGameState] = useState<'waiting' | 'starting' | 'in_progress' | 'finished'>('waiting');
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
+  // Definir constantes para los estados de conexión
+  const CONNECTION_STATES = {
+    CONNECTING: 'connecting',
+    CONNECTED: 'connected',
+    DISCONNECTED: 'disconnected',
+    ERROR: 'error'
+  } as const;
+  
+  type ConnectionStatus = typeof CONNECTION_STATES[keyof typeof CONNECTION_STATES];
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(CONNECTION_STATES.CONNECTING);
+  
+  // Funciones de ayuda para verificar el estado de conexión
+  const isConnecting = connectionStatus === CONNECTION_STATES.CONNECTING;
+  const isErrorState = connectionStatus === CONNECTION_STATES.ERROR;
+  const isDisconnected = connectionStatus === CONNECTION_STATES.DISCONNECTED;
   const [isConnected, setIsConnected] = useState(false);
   const [roomCodeInput, setRoomCodeInput] = useState('');
 
@@ -70,7 +84,7 @@ export default function CompetitionScreen() {
 
         socket.on('connect', () => {
           console.log('✅ Conectado al servidor Socket.IO');
-          setConnectionStatus('connected');
+          setConnectionStatus(CONNECTION_STATES.CONNECTED);
           setIsConnected(true);
 
           // Solo crear sala automáticamente si hay initialRoomCode (navegando desde otra página)
@@ -95,7 +109,7 @@ export default function CompetitionScreen() {
 
         socket.on('disconnect', (reason) => {
           console.log('🔌 Desconectado del servidor:', reason);
-          setConnectionStatus('disconnected');
+          setConnectionStatus(CONNECTION_STATES.DISCONNECTED);
           setIsConnected(false);
         });
 
@@ -204,7 +218,7 @@ export default function CompetitionScreen() {
     }, [gameState])
   );
 
-  if (connectionStatus === 'connecting') {
+  if (isConnecting) {
     return (
       <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -215,12 +229,12 @@ export default function CompetitionScreen() {
     );
   }
 
-  if (connectionStatus === 'error' || connectionStatus === 'disconnected') {
+  if (isErrorState || isDisconnected) {
     return (
       <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
-            {connectionStatus === 'error' ? 'Error de conexión' : 'Desconectado del servidor'}
+            {isErrorState ? 'Error de conexión' : 'Desconectado del servidor'}
           </Text>
           <Text style={styles.errorDescription}>
             No se pudo conectar al servidor. Por favor, verifica tu conexión a internet e inténtalo de nuevo.
@@ -236,7 +250,7 @@ export default function CompetitionScreen() {
     );
   }
 
-  if (connectionStatus === 'connecting' || !isConnected) {
+  if (isConnecting) {
     return (
       <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -248,15 +262,15 @@ export default function CompetitionScreen() {
     );
   }
 
-  if (connectionStatus === 'error' || connectionStatus === 'disconnected') {
+  if (isErrorState || isDisconnected) {
     return (
       <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>
-            {connectionStatus === 'error' ? 'Error de conexión' : 'Desconectado del servidor'}
+            {isErrorState ? 'Error de conexión' : 'Desconectado del servidor'}
           </Text>
           <Text style={styles.errorDescription}>
-            {connectionStatus === 'error'
+            {isErrorState
               ? 'No se pudo conectar al servidor integrado. Asegúrate de que el servidor esté corriendo en el puerto 3002.'
               : 'Se perdió la conexión con el servidor. Verifica tu conexión a internet.'
             }
@@ -264,7 +278,7 @@ export default function CompetitionScreen() {
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => {
-              setConnectionStatus('connecting');
+              setConnectionStatus(CONNECTION_STATES.CONNECTING);
               setIsConnected(false);
               // Forzar reconexión
               if (socketRef.current) {

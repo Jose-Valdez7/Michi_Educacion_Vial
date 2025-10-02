@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Animated, Easing, ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '@/utils/colors';
+import { BicycleProgressService } from 'src/services/bicycleProgress';
+import { colors } from 'src/utils/colors';
 import { useRouter, type Href } from 'expo-router';
-import { ProgressApi } from '@/services/progress';
+import { ProgressApi } from 'src/services/progress';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,16 +23,25 @@ export default function MinigamesLevel1() {
   useEffect(() => {
     (async () => {
       try {
+        // ✅ Sincronizar progreso local con servidor
+        await BicycleProgressService.syncWithServer();
+
         const p = await ProgressApi.get();
         const list: string[] = Array.isArray(p.completedGames) ? p.completedGames : [];
 
-        setCompletedActivities({
+        // Verificar si alguna de las claves de bicicleta está en la lista
+        const bicycleKeys = ['1_paseo_bici', '1_2', 'bicycle_completed'];
+        const hasBicycleCompleted = bicycleKeys.some(key => list.includes(key));
+
+        const completedActivities = {
           coloring: list.includes('1_colorear_divertidamente') || list.includes('1_6'),
           quiz: list.includes('1_quiz_vial') || list.includes('1_1'),
-          bicycle: list.includes('1_paseo_bici') || list.includes('1_2')
-        });
+          bicycle: hasBicycleCompleted
+        };
+
+        setCompletedActivities(completedActivities);
       } catch (e) {
-        // Error loading completed activities
+        console.error('Error loading completed activities:', e);
       }
     })();
   }, []);
@@ -97,13 +107,15 @@ export default function MinigamesLevel1() {
             resizeMode="cover"
           />
           <View style={styles.cardBottomLargeGreen}>
-            <Text style={styles.cardTitleLarge}>Colorear divertidamente</Text>
+            <View style={styles.cardTitleContainer}>
+              <Text style={styles.cardTitleLarge}>Colorear divertidamente</Text>
+              {completedActivities.coloring && (
+                <View style={styles.starContainerInline}>
+                  <Text style={styles.starText}>⭐</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.cardDescLarge}>Colorea y aprende</Text>
-            {completedActivities.coloring && (
-              <View style={styles.starContainer}>
-                <Text style={styles.starText}>⭐</Text>
-              </View>
-            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -118,13 +130,15 @@ export default function MinigamesLevel1() {
             resizeMode="cover"
           />
           <View style={styles.cardBottomLargeYellow}>
-            <Text style={styles.cardTitleLarge}>Quiz Vial</Text>
+            <View style={styles.cardTitleContainer}>
+              <Text style={styles.cardTitleLarge}>Quiz Vial</Text>
+              {completedActivities.quiz && (
+                <View style={styles.starContainerInline}>
+                  <Text style={styles.starText}>⭐</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.cardDescLarge}>Pon a prueba tus conocimientos</Text>
-            {completedActivities.quiz && (
-              <View style={styles.starContainer}>
-                <Text style={styles.starText}>⭐</Text>
-              </View>
-            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -139,13 +153,15 @@ export default function MinigamesLevel1() {
             resizeMode="cover"
           />
           <View style={styles.cardBottomLargeOrange}>
-            <Text style={styles.cardTitleLarge}>Aventura en Bicicleta</Text>
+            <View style={styles.cardTitleContainer}>
+              <Text style={styles.cardTitleLarge}>Aventura en Bicicleta</Text>
+              {completedActivities.bicycle && (
+                <View style={styles.starContainerInline}>
+                  <Text style={styles.starText}>⭐</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.cardDescLarge}>Evita obstáculos y responde preguntas</Text>
-            {completedActivities.bicycle && (
-              <View style={styles.starContainer}>
-                <Text style={styles.starText}>⭐</Text>
-              </View>
-            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -167,7 +183,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.lightWhite,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 12,
@@ -204,14 +220,29 @@ const styles = StyleSheet.create({
   cardTopLarge: { alignItems: 'center', justifyContent: 'center', minHeight: 125 },
   cardTopImageCover: { opacity: 1 },
   cardBottomLarge: { paddingVertical: 13, paddingHorizontal: 13 },
-  cardTitleLarge: { color: colors.white, fontWeight: 'bold', fontSize: 19, textAlign: 'center' },
+  cardTitleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%'
+  },
+  cardTitleLarge: {
+    color: colors.white,
+    fontWeight: 'bold',
+    fontSize: 19,
+    textAlign: 'left',
+    flex: 1
+  },
   cardDescLarge: { color: colors.white, opacity: 0.95, marginTop: 5, textAlign: 'center', fontSize: 15 },
   // Color helpers for bottoms
   cardBottomLargeGreen: { backgroundColor: colors.gradientVialGreen[0], paddingVertical: 13, paddingHorizontal: 13 },
   cardBottomLargeYellow: { backgroundColor: colors.gradientVialYellow[0], paddingVertical: 13, paddingHorizontal: 13 },
   cardBottomLargeOrange: { backgroundColor: colors.gradientVialOrange[0], paddingVertical: 13, paddingHorizontal: 13 },
-  starContainer: { alignItems: 'center', marginTop: 8 },
-  starText: { fontSize: 24, color: '#FFD700' },
+  starContainerInline: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10
+  },
 });
 
 function StarsRow({ completed }: { completed: Record<string, boolean> }) {
@@ -222,4 +253,5 @@ function StarsRow({ completed }: { completed: Record<string, boolean> }) {
         <Text key={i} style={styles.starText}>{i <= count ? '⭐' : '☆'}</Text>
       ))}
     </View>
-  );}
+  );
+}

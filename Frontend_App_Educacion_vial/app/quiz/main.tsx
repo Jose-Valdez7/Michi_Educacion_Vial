@@ -10,7 +10,7 @@ const { width } = Dimensions.get('window');
 export default function QuizMain() {
   const router = useRouter();
   return (
-    <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
+    <LinearGradient colors={['#FFE4B5', '#FFD700', colors.gradientVialYellow[0]]} style={styles.container}>
       {/* Back Button - Top Left */}
       <TouchableOpacity 
         onPress={() => router.replace('/minigames/level1' as Href)} 
@@ -94,12 +94,12 @@ const styles = StyleSheet.create({
   header: { 
     alignItems: 'center', 
     marginBottom: 24,
-    marginTop: 12,
+    marginTop: 34,
     width: '100%',
   },
   image: { 
-    width: width < 400 ? 140 : 160, 
-    height: width < 400 ? 100 : 120, 
+    width: width < 300 ? 200 : 260, 
+    height: width < 300 ? 180 : 220, 
     marginBottom: 16,
   },
   title: { 

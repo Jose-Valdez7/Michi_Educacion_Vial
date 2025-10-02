@@ -4,20 +4,21 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Image,
   Modal,
-  Animated,
   Dimensions,
-  Alert,
+  Animated,
   PanResponder,
   GestureResponderEvent,
   PanResponderGestureState,
-  Image,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
-import { ProgressApi } from '@/services/progress';
-import { BicycleProgressService } from '@/services/bicycleProgress';
-import { colors } from '@/utils/colors';
+import { ProgressApi } from 'src/services/progress';
+import { BicycleProgressService } from 'src/services/bicycleProgress';
+import { awardBicycleLevel1Completion } from 'src/services/progress2';
+import { colors } from 'src/utils/colors';
 
 type Option = {
   id: string;
@@ -518,7 +519,10 @@ export default function BicycleGameScreen() {
           <Image source={require('../assets/images/btn-volver.png')} style={styles.backImg} resizeMode="contain" />
         </TouchableOpacity>
         <View style={styles.menuContainer}>
-          <Text style={styles.gameTitle}>🚴 Aventura en Bicicleta</Text>
+          <View style={styles.mascotContainer}>
+            <Image source={require('../assets/images/bici.png')} style={styles.biciImage} resizeMode="contain" />
+          </View>
+          <Text style={styles.gameTitle}> Aventura en Bicicleta</Text>
           <Text style={styles.gameSubtitle}>
             Evita obstáculos y responde preguntas correctamente para avanzar
           </Text>
@@ -598,14 +602,44 @@ export default function BicycleGameScreen() {
               style={styles.startButton}
               onPress={async () => {
                 try {
+                  // 1. Marcar como completado localmente
                   await BicycleProgressService.markCompleted();
 
-                  const p = await ProgressApi.get();
-                  const set = new Set<string>(Array.isArray(p.completedGames) ? p.completedGames : []);
-                  set.add('1_bicycle');
-                  await ProgressApi.update({ completedGames: Array.from(set) });
-                } catch {}
-                router.replace('/minigames/level1' as Href);
+                  // 2. Intentar sincronizar con el servidor
+                  let syncSuccess = false;
+                  try {
+                    syncSuccess = await BicycleProgressService.syncWithServer();
+
+                    if (syncSuccess) {
+                      // 3. Intentar otorgar recompensas adicionales solo si la sincronización fue exitosa
+                      try {
+                        await awardBicycleLevel1Completion();
+                      } catch (awardError) {
+                        console.warn('⚠️ Could not award level 1 completion, but continuing:', awardError);
+                      }
+                    }
+                  } catch (syncError) {
+                    console.warn('⚠️ Server sync failed, but local progress saved:', syncError);
+                    // El progreso local ya está guardado, se intentará sincronizar la próxima vez
+                  }
+
+                  // 4. Forzar una nueva carga del progreso al regresar
+                  if (syncSuccess) {
+                    // Esperar un momento para asegurar que los cambios se propaguen
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                  }
+                } catch (error) {
+                  console.error('❌ Error in bicycle completion process:', error);
+                  // Mostrar mensaje de error al usuario
+                  Alert.alert(
+                    'Error',
+                    'Hubo un error al guardar tu progreso. No te preocupes, tu progreso se guardará localmente y se sincronizará más tarde.',
+                    [{ text: 'Aceptar' }]
+                  );
+                } finally {
+                  // Navegar de vuelta al menú de nivel 1
+                  router.replace('/minigames/level1' as Href);
+                }
               }}
             >
               <Text style={styles.startButtonText}>Completar</Text>
@@ -791,11 +825,12 @@ export default function BicycleGameScreen() {
     </LinearGradient>
   );
 }
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   backTopBtn: { position: 'absolute', top: 20, left: 16, zIndex: 20 },
   backImg: { width: 96, height: 84 },
+  mascotContainer: { alignItems: 'center', marginVertical: 12 },
+  biciImage: { width: 220, height: 200 },
   
   // Menu Styles
   menuContainer: {
