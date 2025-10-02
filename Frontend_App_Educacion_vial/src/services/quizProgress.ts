@@ -51,11 +51,11 @@ export class QuizProgressService {
     try {
       const stored = await AsyncStorage.getItem(QUIZ_PROGRESS_KEY);
       if (stored) {
-        return { ...defaultProgress, ...JSON.parse(stored) };
+        const result = { ...defaultProgress, ...JSON.parse(stored) };
+        return result;
       }
       return defaultProgress;
     } catch (error) {
-      
       return defaultProgress;
     }
   }
@@ -105,7 +105,8 @@ export class QuizProgressService {
             }
           }
         } catch (error) {
-          
+          console.error('❌ Error updating quiz completion:', error);
+          // No lanzar el error para no interrumpir el flujo del juego
         }
       }
 
@@ -134,10 +135,10 @@ export class QuizProgressService {
       case 'easy':
         return true; // Siempre disponible
       case 'medium':
-        // ✅ Desbloquear nivel medio si se completó el nivel fácil
+        // Desbloquear nivel medio si se completó el nivel fácil
         return progress.medium.unlocked || progress.easy.completed;
       case 'hard':
-        // ✅ Desbloquear nivel difícil si se completó el nivel medio
+        // Desbloquear nivel difícil si se completó el nivel medio
         return progress.hard.unlocked || progress.medium.completed;
       default:
         return false;

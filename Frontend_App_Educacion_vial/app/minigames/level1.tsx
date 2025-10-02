@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Animated, Easing, ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '@/utils/colors';
+import { BicycleProgressService } from 'src/services/bicycleProgress';
+import { colors } from 'src/utils/colors';
 import { useRouter, type Href } from 'expo-router';
-import { ProgressApi } from '@/services/progress';
+import { ProgressApi } from 'src/services/progress';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,16 +23,25 @@ export default function MinigamesLevel1() {
   useEffect(() => {
     (async () => {
       try {
+        // ✅ Sincronizar progreso local con servidor
+        await BicycleProgressService.syncWithServer();
+
         const p = await ProgressApi.get();
         const list: string[] = Array.isArray(p.completedGames) ? p.completedGames : [];
 
-        setCompletedActivities({
-          coloring: list.includes('1_coloring') || list.includes('1_6'),
+        // Verificar si alguna de las claves de bicicleta está en la lista
+        const bicycleKeys = ['1_paseo_bici', '1_2', 'bicycle_completed'];
+        const hasBicycleCompleted = bicycleKeys.some(key => list.includes(key));
+
+        const completedActivities = {
+          coloring: list.includes('1_colorear_divertidamente') || list.includes('1_6'),
           quiz: list.includes('1_quiz_vial') || list.includes('1_1'),
-          bicycle: list.includes('1_bicycle') || list.includes('1_2')
-        });
+          bicycle: hasBicycleCompleted
+        };
+
+        setCompletedActivities(completedActivities);
       } catch (e) {
-        // Error loading completed activities
+        console.error('Error loading completed activities:', e);
       }
     })();
   }, []);
@@ -74,8 +84,11 @@ export default function MinigamesLevel1() {
           resizeMode="cover"
         />
       </View>
+      <StarsRow completed={completedActivities} />
 
-      <TouchableOpacity onPress={() => router.back()} activeOpacity={0.85} style={styles.backBtn}>
+      <View style={{ height: 12 }} />
+
+      <TouchableOpacity onPress={() => router.replace('/welcome' as Href)} activeOpacity={0.85} style={styles.backBtn}>
         <Image source={require('../../assets/images/btn-volver.png')} style={styles.backImg} resizeMode="contain" />
       </TouchableOpacity>
 
@@ -94,7 +107,14 @@ export default function MinigamesLevel1() {
             resizeMode="cover"
           />
           <View style={styles.cardBottomLargeGreen}>
-            <Text style={styles.cardTitleLarge}>Colorear divertidamente</Text>
+            <View style={styles.cardTitleContainer}>
+              <Text style={styles.cardTitleLarge}>Colorear divertidamente</Text>
+              {completedActivities.coloring && (
+                <View style={styles.starContainerInline}>
+                  <Text style={styles.starText}>⭐</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.cardDescLarge}>Colorea y aprende</Text>
           </View>
         </View>
@@ -110,7 +130,14 @@ export default function MinigamesLevel1() {
             resizeMode="cover"
           />
           <View style={styles.cardBottomLargeYellow}>
-            <Text style={styles.cardTitleLarge}>Quiz Vial</Text>
+            <View style={styles.cardTitleContainer}>
+              <Text style={styles.cardTitleLarge}>Quiz Vial</Text>
+              {completedActivities.quiz && (
+                <View style={styles.starContainerInline}>
+                  <Text style={styles.starText}>⭐</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.cardDescLarge}>Pon a prueba tus conocimientos</Text>
           </View>
         </View>
@@ -126,7 +153,14 @@ export default function MinigamesLevel1() {
             resizeMode="cover"
           />
           <View style={styles.cardBottomLargeOrange}>
-            <Text style={styles.cardTitleLarge}>Aventura en Bicicleta</Text>
+            <View style={styles.cardTitleContainer}>
+              <Text style={styles.cardTitleLarge}>Aventura en Bicicleta</Text>
+              {completedActivities.bicycle && (
+                <View style={styles.starContainerInline}>
+                  <Text style={styles.starText}>⭐</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.cardDescLarge}>Evita obstáculos y responde preguntas</Text>
           </View>
         </View>
@@ -141,19 +175,38 @@ const styles = StyleSheet.create({
   bgImage: { position: 'absolute', width: width, height: '100%', opacity: 1 },
   backBtn: { position: 'absolute', top: 20, left: 16, zIndex: 10 },
   backImg: { width: 96, height: 84 },
+  starsContainer: {
+    position: 'absolute',
+    top: 40,
+    right: 16,
+    zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    shadowColor: colors.shadowDark as any,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6
+  },
+  starText: { fontSize: 24 },
   titleImage: { width: width * 0.48, height: 64, alignSelf: 'center', marginTop: 30, marginBottom: 6 },
   title: { fontSize: 20, fontWeight: 'bold', color: colors.white, textAlign: 'center' },
   subtitle: { textAlign: 'center', color: colors.white, opacity: 0.9, marginTop: 2, fontSize: width < 400 ? 13 : 15 },
   // Cards base
-  card: { 
-    borderRadius: 14, 
-    overflow: 'hidden', 
-    marginTop: 11, 
-    shadowColor: colors.shadowDark as any, 
-    shadowOffset: { width: 0, height: 5 }, 
-    shadowOpacity: 0.29, 
-    shadowRadius: 5.5, 
-    elevation: 9 
+  card: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginTop: 11,
+    shadowColor: colors.shadowDark as any,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.29,
+    shadowRadius: 5.5,
+    elevation: 9
   },
   // Column split (normal)
   cardInnerColumn: { flexDirection: 'column', alignItems: 'stretch', minHeight: 135 },
@@ -167,10 +220,38 @@ const styles = StyleSheet.create({
   cardTopLarge: { alignItems: 'center', justifyContent: 'center', minHeight: 125 },
   cardTopImageCover: { opacity: 1 },
   cardBottomLarge: { paddingVertical: 13, paddingHorizontal: 13 },
-  cardTitleLarge: { color: colors.white, fontWeight: 'bold', fontSize: 19, textAlign: 'center' },
+  cardTitleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%'
+  },
+  cardTitleLarge: {
+    color: colors.white,
+    fontWeight: 'bold',
+    fontSize: 19,
+    textAlign: 'left',
+    flex: 1
+  },
   cardDescLarge: { color: colors.white, opacity: 0.95, marginTop: 5, textAlign: 'center', fontSize: 15 },
   // Color helpers for bottoms
   cardBottomLargeGreen: { backgroundColor: colors.gradientVialGreen[0], paddingVertical: 13, paddingHorizontal: 13 },
   cardBottomLargeYellow: { backgroundColor: colors.gradientVialYellow[0], paddingVertical: 13, paddingHorizontal: 13 },
   cardBottomLargeOrange: { backgroundColor: colors.gradientVialOrange[0], paddingVertical: 13, paddingHorizontal: 13 },
+  starContainerInline: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10
+  },
 });
+
+function StarsRow({ completed }: { completed: Record<string, boolean> }) {
+  const count = (completed.coloring ? 1 : 0) + (completed.quiz ? 1 : 0) + (completed.bicycle ? 1 : 0);
+  return (
+    <View style={styles.starsContainer}>
+      {[1, 2, 3].map((i) => (
+        <Text key={i} style={styles.starText}>{i <= count ? '⭐' : '☆'}</Text>
+      ))}
+    </View>
+  );
+}

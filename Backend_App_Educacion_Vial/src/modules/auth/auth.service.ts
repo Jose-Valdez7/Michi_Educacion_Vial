@@ -153,6 +153,10 @@ export class AuthService {
           id: child.id,
           name: child.name,
           roles: child.role,
+          cedula: child.cedula,
+          userName: child.username,
+          birthdate: child.birthDate,
+          sex: child.sex,
         },
         ...tokens,
       };

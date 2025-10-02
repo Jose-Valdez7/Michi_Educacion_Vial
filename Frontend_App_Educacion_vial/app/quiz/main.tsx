@@ -10,16 +10,14 @@ const { width } = Dimensions.get('window');
 export default function QuizMain() {
   const router = useRouter();
   return (
-    <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
+    <LinearGradient colors={['#FFE4B5', '#FFD700', colors.gradientVialYellow[0]]} style={styles.container}>
       {/* Back Button - Top Left */}
       <TouchableOpacity 
-        onPress={() => router.push('/minigames/level1' as Href)} 
+        onPress={() => router.replace('/minigames/level1' as Href)} 
         style={styles.backBtn} 
         activeOpacity={0.85}
       >
-        <LinearGradient colors={colors.gradientSecondary} style={styles.backGradient}>
-          <Text style={styles.backText}>← Volver</Text>
-        </LinearGradient>
+        <Image source={require('../../assets/images/btn-volver.png')} style={styles.backImg} resizeMode="contain" />
       </TouchableOpacity>
 
       <View style={styles.header}> 
@@ -87,33 +85,21 @@ const styles = StyleSheet.create({
   // Back button styles
   backBtn: { 
     position: 'absolute',
-    top: 40,
-    left: 20,
+    top: 20,
+    left: 16,
     zIndex: 10,
-    borderRadius: 16,
-    overflow: 'hidden',
-    width: 110,
   },
-  backGradient: { 
-    paddingVertical: 8, 
-    paddingHorizontal: 12,
-    alignItems: 'center',
-  },
-  backText: { 
-    color: colors.white, 
-    fontWeight: '700',
-    fontSize: 14,
-  },
+  backImg: { width: 96, height: 84 },
   // Header content
   header: { 
     alignItems: 'center', 
     marginBottom: 24,
-    marginTop: 12,
+    marginTop: 34,
     width: '100%',
   },
   image: { 
-    width: width < 400 ? 140 : 160, 
-    height: width < 400 ? 100 : 120, 
+    width: width < 300 ? 200 : 260, 
+    height: width < 300 ? 180 : 220, 
     marginBottom: 16,
   },
   title: { 

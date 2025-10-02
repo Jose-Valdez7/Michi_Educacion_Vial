@@ -5,6 +5,7 @@ import { colors } from '@/utils/colors';
 import { useRouter, useLocalSearchParams, type Href } from 'expo-router';
 import questions from './questions';
 import { QuizProgressService } from '@/services/quizProgress';
+import { awardQuizLevel1Completion } from '@/services/progress2';
 
 // Mapeo de imágenes para las preguntas (completamente opcional)
 const questionImages: { [key: string]: any } = {};
@@ -198,6 +199,11 @@ export default function QuizPlay() {
         if (finalScore === levelQuestions.length && failedQuestions.size === 0) {
           // ✅ Completó todas las 5 preguntas correctamente
           await QuizProgressService.completeLevel(levelId, finalScore);
+
+          // ✅ Guardar progreso global de juegos completados (solo para nivel difícil)
+          if (levelId === 'hard') {
+            await awardQuizLevel1Completion(10);
+          }
 
           Alert.alert(
             '¡Nivel Completado!',
