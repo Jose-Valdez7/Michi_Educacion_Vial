@@ -65,8 +65,8 @@ export async function awardQuizLevel1Completion(pointsEarned = 10) {
   });
 }
 
-export async function awardBicycleLevel1Completion(pointsEarned = 10) {
-  const l = 1;
+export async function awardBicycleLevel2Completion(pointsEarned = 10) {
+  const l = 2;
 
   try {
     return await apply({
@@ -75,7 +75,7 @@ export async function awardBicycleLevel1Completion(pointsEarned = 10) {
       addCompleted: [`${l}_paseo_bici`, `${l}_2`],
     });
   } catch (error) {
-    console.error('❌ Error in awardBicycleLevel1Completion:', error);
+    console.error('❌ Error in awardBicycleLevel2Completion:', error);
     // No lanzar el error para no interrumpir el flujo del juego
     return null;
   }

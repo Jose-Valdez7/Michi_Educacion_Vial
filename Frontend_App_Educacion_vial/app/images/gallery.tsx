@@ -88,7 +88,13 @@ export default function ImagesGallery() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🖼️ Tu Galería</Text>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Image source={require('../../assets/images/btn-volver.png')} style={styles.backButtonImage} resizeMode="contain" />
+        </TouchableOpacity>
+        <Image source={require('../../assets/images/logo-pintor.png')} style={styles.logoImage} resizeMode="contain" />
+        <Text style={styles.title}> Tu Galería</Text>
+      </View>
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
@@ -243,8 +249,35 @@ export default function ImagesGallery() {
 const CARD_SIZE = (width - 80 - 10) / 2; // padding 40*2, gap 10
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 40, backgroundColor: colors.primary },
-  title: { fontSize: width < 400 ? 22 : 26, fontWeight: 'bold', color: colors.white, marginBottom: 12, textAlign: 'center' },
+  container: { flex: 1, padding: 40, paddingTop: 20, backgroundColor: colors.primary },
+  header: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 30,
+    position: 'relative',
+    paddingTop: 20,
+  },
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    top: 10,
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  backButtonImage: {
+    width: 90,
+    height: 90,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
+    marginBottom: 15,
+    marginTop: 10,
+  },
+  title: { fontSize: width < 400 ? 22 : 26, fontWeight: 'bold', color: colors.white, marginBottom: 12, textAlign: 'center', marginTop: 5 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary },
   card: { width: CARD_SIZE, height: CARD_SIZE + 20, borderRadius: 16, overflow: 'hidden', marginBottom: 10, backgroundColor: 'rgba(255,255,255,0.15)' },
   cardInner: { flex: 1, padding: 12, justifyContent: 'space-between' },

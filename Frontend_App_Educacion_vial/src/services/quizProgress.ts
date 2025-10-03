@@ -51,13 +51,62 @@ export class QuizProgressService {
     try {
       const stored = await AsyncStorage.getItem(QUIZ_PROGRESS_KEY);
       if (stored) {
-        const result = { ...defaultProgress, ...JSON.parse(stored) };
-        return result;
+        const parsedProgress = JSON.parse(stored);
+
+        // Verificar y corregir datos inconsistentes automáticamente
+        const correctedProgress = await this.validateAndCorrectProgress(parsedProgress);
+
+        // Si los datos fueron corregidos, guardarlos silenciosamente
+        if (JSON.stringify(correctedProgress) !== stored) {
+          await this.saveProgress(correctedProgress);
+        }
+
+        return correctedProgress;
       }
+
       return defaultProgress;
     } catch (error) {
+      console.error('❌ Error getting progress, using default:', error);
       return defaultProgress;
     }
+  }
+
+  static async validateAndCorrectProgress(progress: any): Promise<QuizProgress> {
+    const corrected = { ...defaultProgress, ...progress };
+
+    // Caso 1: Nivel medio completado pero fácil no completado
+    if (corrected.medium.completed && !corrected.easy.completed) {
+      corrected.medium.completed = false;
+      corrected.medium.score = 0;
+      corrected.medium.completedAt = undefined;
+    }
+
+    // Caso 2: Nivel difícil completado pero medio no completado
+    if (corrected.hard.completed && !corrected.medium.completed) {
+      corrected.hard.completed = false;
+      corrected.hard.score = 0;
+      corrected.hard.completedAt = undefined;
+    }
+
+    // Caso 3: Nivel medio desbloqueado pero fácil no completado
+    if (corrected.medium.unlocked && !corrected.easy.completed) {
+      corrected.medium.unlocked = false;
+      corrected.medium.unlockedAt = undefined;
+    }
+
+    // Caso 4: Nivel difícil desbloqueado pero medio no completado
+    if (corrected.hard.unlocked && !corrected.medium.completed) {
+      corrected.hard.unlocked = false;
+      corrected.hard.unlockedAt = undefined;
+    }
+
+    // Caso 5: level1Completed es true pero no todos los niveles están completados
+    if (corrected.level1Completed && (!corrected.easy.completed || !corrected.medium.completed || !corrected.hard.completed)) {
+      corrected.level1Completed = false;
+      corrected.level1CompletedAt = undefined;
+    }
+
+    return corrected;
   }
 
   static async saveProgress(progress: QuizProgress): Promise<void> {
@@ -77,11 +126,11 @@ export class QuizProgressService {
       progress[levelId].score = score;
       progress[levelId].completedAt = new Date().toISOString();
 
-      // Desbloquear siguiente nivel si existe
-      if (levelId === 'easy') {
+      // Solo desbloquear siguiente nivel si el actual se completó correctamente
+      if (levelId === 'easy' && !progress.medium.unlocked) {
         progress.medium.unlocked = true;
         progress.medium.unlockedAt = new Date().toISOString();
-      } else if (levelId === 'medium') {
+      } else if (levelId === 'medium' && !progress.hard.unlocked) {
         progress.hard.unlocked = true;
         progress.hard.unlockedAt = new Date().toISOString();
       }
@@ -91,14 +140,13 @@ export class QuizProgressService {
         progress.level1Completed = true;
         progress.level1CompletedAt = new Date().toISOString();
 
-        // ✅ Agregar entrada específica del quiz difícil (solo 1 estrella)
+        // Agregar entrada específica del quiz difícil (solo 1 estrella)
         try {
           const session = await AuthService.getSession();
           if (session.accessToken && session.childId) {
             const currentProgress = await ProgressApi.get();
-            const gameKey = '1_quiz_vial'; // ✅ Solo el quiz vial difícil da 1 estrella
+            const gameKey = '1_quiz_vial';
 
-            // Solo agregar si no está ya completado
             if (!currentProgress.completedGames.includes(gameKey)) {
               const updatedCompletedGames = [...currentProgress.completedGames, gameKey];
               await ProgressApi.update({ completedGames: updatedCompletedGames });
@@ -106,7 +154,6 @@ export class QuizProgressService {
           }
         } catch (error) {
           console.error('❌ Error updating quiz completion:', error);
-          // No lanzar el error para no interrumpir el flujo del juego
         }
       }
 
@@ -118,12 +165,46 @@ export class QuizProgressService {
     await this.saveProgress(defaultProgress);
   }
 
+  static async forceCleanReset(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(QUIZ_PROGRESS_KEY);
+    } catch (error) {
+      console.error('❌ Error removing quiz progress:', error);
+    }
+  }
+
+  // Función administrativa para limpiar datos corruptos extremos
+  static async adminResetIfCorrupted(): Promise<boolean> {
+    try {
+      const progress = await this.getProgress();
+
+      // Verificar casos extremos de corrupción
+      const hasExtremeCorruption =
+        (progress.medium.completed && !progress.easy.completed) ||
+        (progress.hard.completed && !progress.medium.completed) ||
+        (progress.medium.unlocked && !progress.easy.completed) ||
+        (progress.hard.unlocked && !progress.medium.completed) ||
+        (progress.level1Completed && (!progress.easy.completed || !progress.medium.completed || !progress.hard.completed));
+
+      if (hasExtremeCorruption) {
+        console.log('🚨 Extreme corruption detected, performing admin reset');
+        await this.forceCleanReset();
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('❌ Error in admin reset check:', error);
+      return false;
+    }
+  }
+
   static async getNextAvailableLevel(): Promise<'easy' | 'medium' | 'hard'> {
     const progress = await this.getProgress();
 
     if (!progress.easy.completed) return 'easy';
-    if (!progress.medium.unlocked) return 'medium';
-    if (!progress.hard.unlocked) return 'hard';
+    if (!progress.medium.unlocked) return 'easy'; // Si medium no está desbloqueado, jugar easy
+    if (!progress.hard.unlocked) return 'medium'; // Si hard no está desbloqueado, jugar medium
 
     return 'easy'; // Si todos están completados, empezar de nuevo
   }
@@ -135,11 +216,11 @@ export class QuizProgressService {
       case 'easy':
         return true; // Siempre disponible
       case 'medium':
-        // Desbloquear nivel medio si se completó el nivel fácil
-        return progress.medium.unlocked || progress.easy.completed;
+        // Solo desbloquear nivel medio si se completó el nivel fácil correctamente
+        return progress.medium.unlocked && progress.easy.completed;
       case 'hard':
-        // Desbloquear nivel difícil si se completó el nivel medio
-        return progress.hard.unlocked || progress.medium.completed;
+        // Solo desbloquear nivel difícil si se completó el nivel medio correctamente
+        return progress.hard.unlocked && progress.medium.completed;
       default:
         return false;
     }

@@ -67,15 +67,7 @@ export const AuthService = {
   },
 
   async logout() {
-    const refresh = await AsyncStorage.getItem(KEYS.REFRESH_TOKEN);
-    if (refresh) {
-      try {
-        await api.request('/auth/logout', {
-          method: 'POST',
-          body: JSON.stringify({ refreshToken: refresh }),
-        });
-      } catch {}
-    }
+    // Solo limpiar datos locales - sin llamadas al servidor
     await AsyncStorage.multiRemove([KEYS.ACCESS_TOKEN, KEYS.REFRESH_TOKEN, KEYS.CHILD_ID, KEYS.CHILD_NAME, KEYS.CHILD_SEX]);
   },
 
