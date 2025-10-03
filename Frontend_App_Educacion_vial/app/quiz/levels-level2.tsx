@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/utils/colors';
 import { useRouter, type Href } from 'expo-router';
+import { Dimensions } from 'react-native';
 import { QuizProgressService, type QuizProgress } from '@/services/quizProgress';
 
 const { width, height } = Dimensions.get('window');
 
-export default function QuizLevels() {
+export default function QuizLevelsLevel2() {
+  const router = useRouter();
   const [progress, setProgress] = useState<QuizProgress | null>(null);
   const [levelStatuses, setLevelStatuses] = useState<{
     easy: { unlocked: boolean; completed: boolean; score: number };
     medium: { unlocked: boolean; completed: boolean; score: number };
     hard: { unlocked: boolean; completed: boolean; score: number };
   }>({
-    easy: { unlocked: false, completed: false, score: 0 },
+    easy: { unlocked: true, completed: false, score: 0 },
     medium: { unlocked: false, completed: false, score: 0 },
     hard: { unlocked: false, completed: false, score: 0 },
   });
   const [loading, setLoading] = useState(true);
-
-  const router = useRouter();
 
   useEffect(() => {
     loadProgress();
@@ -28,13 +28,19 @@ export default function QuizLevels() {
 
   const loadProgress = async () => {
     try {
-      // Primero verificar si hay corrupción extrema que requiera limpieza administrativa
-      await QuizProgressService.adminResetIfCorrupted();
-
       const quizProgress = await QuizProgressService.getProgress();
 
-      // Los datos ya vienen validados y corregidos automáticamente por el servicio
-      setProgress(quizProgress);
+      // Verificar datos corruptos (solo si NO se completó level1 correctamente)
+      if (quizProgress.easy.completed && quizProgress.medium.completed && quizProgress.hard.completed && !quizProgress.level1Completed) {
+        console.log('🚨 Datos corruptos detectados - reseteando...');
+        await QuizProgressService.resetProgress();
+        // Recargar después del reset
+        const cleanProgress = await QuizProgressService.getProgress();
+        console.log('✅ Clean progress after reset:', cleanProgress);
+        setProgress(cleanProgress);
+      } else {
+        setProgress(quizProgress);
+      }
 
       // Cargar estados de todos los niveles
       const easyStatus = await QuizProgressService.getLevelStatus('easy');
@@ -48,7 +54,7 @@ export default function QuizLevels() {
       });
     } catch (error) {
       console.error('❌ Error loading quiz progress:', error);
-      // Estado por defecto en caso de error - solo fácil desbloqueado
+      // Estado por defecto en caso de error
       setLevelStatuses({
         easy: { unlocked: true, completed: false, score: 0 },
         medium: { unlocked: false, completed: false, score: 0 },
@@ -62,31 +68,31 @@ export default function QuizLevels() {
   const levels = [
     {
       id: 'easy' as const,
-      title: 'Nivel Fácil',
+      title: 'Nivel 2 Fácil',
       subtitle: '5 preguntas básicas',
       icon: '🟢',
       color: ['#4CAF50', '#45a049'] as const,
-      description: 'Preguntas básicas sobre señales de tráfico y normas viales fundamentales',
+      description: 'Preguntas básicas nivel 2 sobre señales de tráfico y normas viales fundamentales',
       questions: 5,
       difficulty: 'Principiante'
     },
     {
       id: 'medium' as const,
-      title: 'Nivel Medio',
+      title: 'Nivel 2 Medio',
       subtitle: '5 preguntas intermedias',
       icon: '🟡',
       color: ['#FFC107', '#FF9800'] as const,
-      description: 'Preguntas sobre conducción segura y marcas viales más complejas',
+      description: 'Preguntas sobre conducción segura y marcas viales más complejas nivel 2',
       questions: 5,
       difficulty: 'Intermedio'
     },
     {
       id: 'hard' as const,
-      title: 'Nivel Difícil',
+      title: 'Nivel 2 Difícil',
       subtitle: '5 preguntas avanzadas',
       icon: '🔴',
       color: ['#E53935', '#F44336'] as const,
-      description: 'Preguntas complejas sobre normas de circulación y señales específicas',
+      description: 'Preguntas complejas sobre normas de circulación y señales específicas nivel 2',
       questions: 5,
       difficulty: 'Avanzado'
     }
@@ -96,7 +102,7 @@ export default function QuizLevels() {
     const status = levelStatuses[levelId];
 
     if (status.unlocked) {
-      router.push(`/quiz/play?level=${levelId}` as Href);
+      router.push(`/quiz/play-level2?level=${levelId}` as Href);
     }
   };
 
@@ -114,11 +120,11 @@ export default function QuizLevels() {
     <LinearGradient colors={colors.gradientPrimary} style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>🧠 Quiz Vial</Text>
+        <Text style={styles.title}>🧠 Quiz Vial Nivel 2</Text>
         <Text style={styles.subtitle}>Elige tu nivel de dificultad</Text>
         {progress?.level1Completed && (
           <View style={styles.completionBadge}>
-            <Text style={styles.completionText}>🎉 ¡Nivel 1 Completado!</Text>
+            <Text style={styles.completionText}>🎉 ¡Nivel 2 Desbloqueado!</Text>
           </View>
         )}
       </View>
@@ -168,8 +174,8 @@ export default function QuizLevels() {
                       <Text style={styles.lockIcon}>🔒</Text>
                       <Text style={styles.lockMessage}>
                         {level.id === 'easy' ? '' :
-                         level.id === 'medium' ? 'Completa el Nivel Fácil para desbloquear' :
-                         'Completa el Nivel Medio para desbloquear'}
+                         level.id === 'medium' ? 'Completa el Nivel 2 Fácil para desbloquear' :
+                         'Completa el Nivel 2 Medio para desbloquear'}
                       </Text>
                     </View>
                   ) : (
@@ -215,7 +221,7 @@ export default function QuizLevels() {
       {/* Back Button */}
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => router.replace('/minigames/level1' as Href)}
+        onPress={() => router.replace('/minigames/level2' as Href)}
         activeOpacity={0.8}
       >
         <Image source={require('../../assets/images/btn-volver.png')} style={{ width: 96, height: 84 }} resizeMode="contain" />

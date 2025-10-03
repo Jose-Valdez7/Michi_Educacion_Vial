@@ -202,19 +202,23 @@ export default function Welcome() {
             <View style={styles.welcomeRow}>
               <View style={styles.welcomeCard}>
                 <Image source={require('../assets/images/gatoLogo.png')} style={styles.welcomeCatImage} resizeMode="contain" />
-                <Text style={styles.welcomeText}>{greeting}, {userName}!</Text>
+                <Text style={styles.welcomeText} numberOfLines={1} adjustsFontSizeToFit>
+                  {greeting}, {userName}!
+                </Text>
               </View>
             </View>
-            <View style={[styles.statPill, { marginRight: 8 }]}>
-              <Text style={styles.statIcon}>🪙</Text>
-              <Text style={styles.statText}>{progress.coins ?? 0}</Text>
+            <View style={styles.rightSection}>
+              <View style={[styles.statPill, { marginRight: 8 }]}>
+                <Text style={styles.statIcon}>🪙</Text>
+                <Text style={styles.statText}>{progress.coins ?? 0}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.settingsButton}
+                onPress={() => setShowSettingsModal(true)}
+              >
+                <Text style={styles.settingsIcon}>⚙️</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={styles.settingsButton}
-              onPress={() => setShowSettingsModal(true)}
-            >
-              <Text style={styles.settingsIcon}>⚙️</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Licencia Digital */}
@@ -234,8 +238,17 @@ export default function Welcome() {
               const isUnlocked = progress.unlockedLevels?.includes(lvl) ?? (lvl === 1);
               const isLocked = !isUnlocked;
 
-              const level1Stars = getStarsForLevel(progress.completedGames, 1);
-              const shouldUnlockLevel2 = lvl === 2 && level1Stars === 3 && !isUnlocked;
+              // Lógica específica para cada nivel
+              let shouldUnlockLevel2 = false;
+              let shouldUnlockLevel3 = false;
+
+              if (lvl === 2) {
+                const level1Stars = getStarsForLevel(progress.completedGames, 1);
+                shouldUnlockLevel2 = level1Stars >= 3 && !isUnlocked;
+              } else if (lvl === 3) {
+                // Para el nivel 3, verificar si se completó el nivel 2 (por simplicidad)
+                shouldUnlockLevel3 = progress.unlockedLevels?.includes(2) && !isUnlocked;
+              }
 
               return (
                 <View key={lvl} style={[styles.islandCard, isLocked && styles.lockedIslandCard]}>
@@ -259,7 +272,13 @@ export default function Welcome() {
                         resizeMode="contain"
                       />
                       <Image
-                        source={require('../assets/images/nivel-1.png')}
+                        source={
+                          lvl === 1 ? require('../assets/images/nivel-1.png') :
+                          lvl === 2 ? require('../assets/images/nivel-2.png') :
+                          lvl === 3 ? require('../assets/images/nivel-3.png') :
+                          lvl === 4 ? require('../assets/images/nivel-4.png') :
+                          require('../assets/images/nivel-5.png')
+                        }
                         style={styles.titleImage}
                         resizeMode="contain"
                       />
@@ -270,7 +289,7 @@ export default function Welcome() {
                         <TouchableOpacity
                           style={[styles.islandButton, isLocked && styles.lockedIslandButton]}
                           onPress={() => {
-                            if (isUnlocked || shouldUnlockLevel2) {
+                            if (isUnlocked || shouldUnlockLevel2 || shouldUnlockLevel3) {
                               Animated.sequence([
                                 Animated.timing(buttonScale, {
                                   toValue: 0.9,
@@ -285,11 +304,15 @@ export default function Welcome() {
                               ]).start();
 
                               setTimeout(() => {
-                                router.push('/minigames/level1' as Href);
+                                if (lvl === 2) {
+                                  router.push('/minigames/level2' as Href);
+                                } else {
+                                  router.push('/minigames/level1' as Href);
+                                }
                               }, 150);
                             }
                           }}
-                          disabled={isLocked && !shouldUnlockLevel2}
+                          disabled={isLocked && !shouldUnlockLevel2 && !shouldUnlockLevel3}
                           activeOpacity={0.85}
                         >
                           <Image
@@ -307,7 +330,7 @@ export default function Welcome() {
                         <Text style={styles.lockMessage}>Nivel Bloqueado</Text>
                         <Text style={styles.lockRequirement}>
                           {lvl === 2 ? (shouldUnlockLevel2 ? '¡Desbloqueado!' : 'Completa las 3 estrellas del Nivel 1') :
-                            lvl === 3 ? 'Completa el Nivel 2' :
+                            lvl === 3 ? (shouldUnlockLevel3 ? '¡Desbloqueado!' : 'Completa el Nivel 2') :
                               lvl === 4 ? 'Completa el Nivel 3' :
                                 'Completa el Nivel 4'}
                         </Text>
@@ -383,7 +406,8 @@ const styles = StyleSheet.create({
   bgImage: { position: 'absolute', width: width, height: '100%', opacity: 0.6 },
   header: { marginBottom: 20 },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  welcomeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', paddingHorizontal: 4 },
+  welcomeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', paddingHorizontal: 4, flex: 1 },
+  rightSection: { flexDirection: 'row', alignItems: 'center' },
   welcomeText: {
     color: 'black',
     fontSize: width < 400 ? 22 : 28,
@@ -447,5 +471,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
+    maxWidth: width * 0.65, // Limitar el ancho máximo 
   },
 });

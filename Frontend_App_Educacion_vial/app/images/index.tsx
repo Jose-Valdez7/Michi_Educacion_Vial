@@ -132,9 +132,7 @@ export default function ImagesMenu() {
         ))}
 
         <TouchableOpacity style={styles.galleryBtn} onPress={() => router.push('/images/gallery' as Href)}>
-          <LinearGradient colors={colors.gradientSecondary} style={styles.galleryGradient}>
-            <Text style={styles.galleryText}>🖼️ Ver Galería</Text>
-          </LinearGradient>
+          <Image source={require('../../assets/images/btn-galeria.jpg')} style={styles.galleryImage} resizeMode="contain" />
         </TouchableOpacity>
       </ScrollView>
     </LinearGradient>
@@ -160,6 +158,7 @@ const styles = StyleSheet.create({
   galleryBtn: { borderRadius: 16, overflow: 'hidden', marginTop: 4 },
   galleryGradient: { paddingVertical: 12, alignItems: 'center' },
   galleryText: { color: colors.white, fontWeight: '700' },
+  galleryImage: { width: '100%', height: 60 },
 });
 
 // Componente de estrellas para 3 tareas
